@@ -44,20 +44,8 @@ class AblySubscriptionManager {
                 if (existing.detachTimeoutId) {
                     clearTimeout(existing.detachTimeoutId)
                     existing.detachTimeoutId = undefined
-                    console.log(
-                        `[AblySubscriptionManager] Cancelled detach for ${channelName}, ref count: ${existing.refCount}`
-                    )
-                } else {
-                    console.log(
-                        `[AblySubscriptionManager] ${channelName} ref count: ${existing.refCount}`
-                    )
                 }
             } else {
-                // New channel, subscribe to it
-                console.log(
-                    `[AblySubscriptionManager] Subscribing to: ${channelName}`
-                )
-
                 const ably = getAbly()
                 const channel = ably.channels.get(channelName)
 
@@ -86,18 +74,11 @@ class AblySubscriptionManager {
 
                         // Handle DELETE
                         if (messageName === "delete") {
-                            console.log(
-                                `[AblySubscriptionManager] Delete message received for ${tableName}:${entityId}`
-                            )
-
                             const foundDocuments = await db[tableName]
                                 .find({ selector: { id: { $eq: entityId } } })
                                 .exec()
 
                             if (foundDocuments.length === 0) {
-                                console.log(
-                                    `[AblySubscriptionManager] Document ${tableName}:${entityId} already deleted or not found`
-                                )
                                 return
                             }
 
@@ -106,9 +87,7 @@ class AblySubscriptionManager {
                                 checkpoint: {},
                                 documents: [{ ...docData, _deleted: true }]
                             })
-                            console.log(
-                                `[AblySubscriptionManager] Marked ${tableName}:${entityId} as deleted`
-                            )
+
                             return
                         }
 
@@ -119,10 +98,6 @@ class AblySubscriptionManager {
 
                         // Handle INSERT (document doesn't exist locally)
                         if (foundDocuments.length === 0) {
-                            console.log(
-                                `[AblySubscriptionManager] Insert detected for ${tableName}:${entityId}, fetching from server`
-                            )
-
                             let messageData = message.data
 
                             if (!messageData) {
@@ -148,9 +123,6 @@ class AblySubscriptionManager {
                                     checkpoint: {},
                                     documents: [messageData]
                                 })
-                                console.log(
-                                    `[AblySubscriptionManager] Inserted ${tableName}:${entityId}`
-                                )
                             }
                             return
                         }
@@ -166,9 +138,6 @@ class AblySubscriptionManager {
                             new Date(docData.updatedAt).getTime() >
                                 new Date(updatedAt).getTime()
                         ) {
-                            console.log(
-                                `[AblySubscriptionManager] Local data is newer for ${tableName}:${entityId}, skipping`
-                            )
                             return
                         }
 
@@ -176,9 +145,6 @@ class AblySubscriptionManager {
 
                         // Fetch from server if no data in message
                         if (!messageData) {
-                            console.log(
-                                `[AblySubscriptionManager] No data in message, fetching from server for ${tableName}:${entityId}`
-                            )
                             const { data, error } = await postgrest
                                 .from(tableName)
                                 .select("*")
@@ -202,9 +168,6 @@ class AblySubscriptionManager {
                                 checkpoint: {},
                                 documents: [{ ...docData, ...messageData }]
                             })
-                            console.log(
-                                `[AblySubscriptionManager] Updated ${tableName}:${entityId}`
-                            )
                         }
                     } catch (error) {
                         console.error(
@@ -235,30 +198,16 @@ class AblySubscriptionManager {
                 if (!subscription) continue
 
                 subscription.refCount--
-                console.log(
-                    `[AblySubscriptionManager] ${channelName} ref count: ${subscription.refCount}`
-                )
 
                 // Schedule detach after delay when ref count reaches 0
                 if (subscription.refCount === 0) {
-                    console.log(
-                        `[AblySubscriptionManager] Scheduling detach for ${channelName} in ${this.DETACH_DELAY_MS}ms`
-                    )
-
                     subscription.detachTimeoutId = setTimeout(() => {
                         // Double-check ref count is still 0 (might have been re-subscribed)
                         const sub = this.subscriptions.get(channelName)
                         if (sub && sub.refCount === 0) {
-                            console.log(
-                                `[AblySubscriptionManager] Detaching from: ${channelName}`
-                            )
                             sub.isDetaching = true
                             sub.unsubscribe()
                             this.subscriptions.delete(channelName)
-                        } else if (sub) {
-                            console.log(
-                                `[AblySubscriptionManager] Skipping detach for ${channelName}, ref count: ${sub.refCount}`
-                            )
                         }
                     }, this.DETACH_DELAY_MS)
                 }

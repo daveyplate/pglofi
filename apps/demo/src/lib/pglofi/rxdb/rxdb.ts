@@ -80,6 +80,8 @@ export async function initializeDb(config: LofiConfig) {
     // Only proceed if enabled is true
     if (!config.enabled) return
 
+    if (rxDb) return
+
     rxDb = await createDatabase(config)
     notify("lofi:db", rxDb)
 }

@@ -20,7 +20,10 @@ export default function TodosPage() {
     const { data: todos, isLoading } = lofi.useQuery(sessionData && "todos", {
         orderBy: { createdAt: "desc" },
         include: { user: "profiles" },
-        where: { task: { ilike: `%${throttledQ}%` } }
+        where: {
+            task: { ilike: `%${throttledQ}%` },
+            userId: sessionData?.user.id
+        }
     })
 
     // const { data: users, isLoading } = lofi.useQuery(

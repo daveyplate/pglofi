@@ -91,9 +91,6 @@ export function useAblyChannels<
         if (prevChannelsRef.current !== newChannelsKey) {
             prevChannelsRef.current = newChannelsKey
             setChannels(channelArray)
-
-            // Log channels for debugging
-            console.log(`[useAblyChannels] ${tableName}:`, channelArray)
         }
     }, [schema, tableKey, query, data])
 

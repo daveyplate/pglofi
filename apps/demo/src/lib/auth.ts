@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { jwt } from "better-auth/plugins"
+import { jwt, multiSession } from "better-auth/plugins"
 import { v7 } from "uuid"
 
 import { db } from "@/database/db"
@@ -41,5 +41,8 @@ export const auth = betterAuth({
             }
         }
     },
-    plugins: [jwt({ jwks: { keyPairConfig: { alg: "ES256" } } })]
+    plugins: [
+        multiSession(),
+        jwt({ jwks: { keyPairConfig: { alg: "ES256" } } })
+    ]
 })

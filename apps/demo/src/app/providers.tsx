@@ -5,7 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ThemeProvider } from "next-themes"
-import { type ReactNode, useEffect } from "react"
+import type { ReactNode } from "react"
 import { Toaster } from "sonner"
 import * as schema from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
@@ -17,10 +17,7 @@ export const queryClient = new QueryClient()
 export function Providers({ children }: { children: ReactNode }) {
     const router = useRouter()
     const { data: sessionData } = authClient.useSession()
-
-    useEffect(() => {
-        setPostgrestToken(sessionData?.session.token)
-    }, [sessionData?.session.token])
+    setPostgrestToken(sessionData?.session.token)
 
     useInitializeDb({
         name: "neon-lofi-playground",
@@ -39,6 +36,7 @@ export function Providers({ children }: { children: ReactNode }) {
             >
                 <AuthUIProvider
                     authClient={authClient}
+                    multiSession
                     navigate={router.push}
                     replace={router.replace}
                     onSessionChange={() => {
