@@ -1,12 +1,13 @@
 {
-    "name": "better-auth-next-app-starter",
-    "version": "0.1.0",
+    "name": "pglofi-demo",
+    "version": "0.0.1",
     "private": true,
     "scripts": {
         "dev": "next dev --turbopack",
         "build": "next build",
         "start": "next start",
         "lint": "biome check",
+        "format": "biome format --write",
         "check-types": "tsc --noEmit"
     },
     "dependencies": {
