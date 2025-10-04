@@ -9,7 +9,14 @@
         "ignoreUnknown": true,
         "includes": [
             "**",
-            "!node_modules"
+            "!node_modules",
+            "!.next",
+            "!dist",
+            "!build",
+            "!auth-schema.ts",
+            "!**/*.css",
+            "!src/components/ui/**/*",
+            "!migrations/**/*"
         ]
     },
     "formatter": {
