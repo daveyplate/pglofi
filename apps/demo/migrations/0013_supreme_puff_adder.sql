@@ -1,0 +1,2 @@
+ALTER TABLE "nodes" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
+ALTER TABLE "outbox" ENABLE ROW LEVEL SECURITY;

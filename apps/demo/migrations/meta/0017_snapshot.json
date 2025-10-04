@@ -1,0 +1,119 @@
+{
+    "id": "a2ccd175-b6ae-41cc-a2e7-865ad19ef3c4",
+    "prevId": "b5490b67-fc9e-4ef8-b086-af3ae5bc9a81",
+    "version": "7",
+    "dialect": "postgresql",
+    "tables": {
+        "public.nodes": {
+            "name": "nodes",
+            "schema": "",
+            "columns": {
+                "id": {
+                    "name": "id",
+                    "type": "text",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "expiry": {
+                    "name": "expiry",
+                    "type": "timestamp",
+                    "primaryKey": false,
+                    "notNull": true
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": true
+        },
+        "public.outbox": {
+            "name": "outbox",
+            "schema": "",
+            "columns": {
+                "sequence_id": {
+                    "name": "sequence_id",
+                    "type": "serial",
+                    "primaryKey": true,
+                    "notNull": true
+                },
+                "mutation_id": {
+                    "name": "mutation_id",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "channel": {
+                    "name": "channel",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "name": {
+                    "name": "name",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": true
+                },
+                "rejected": {
+                    "name": "rejected",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                },
+                "data": {
+                    "name": "data",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "headers": {
+                    "name": "headers",
+                    "type": "jsonb",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "locked_by": {
+                    "name": "locked_by",
+                    "type": "text",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "lock_expiry": {
+                    "name": "lock_expiry",
+                    "type": "timestamp",
+                    "primaryKey": false,
+                    "notNull": false
+                },
+                "processed": {
+                    "name": "processed",
+                    "type": "boolean",
+                    "primaryKey": false,
+                    "notNull": true,
+                    "default": false
+                }
+            },
+            "indexes": {},
+            "foreignKeys": {},
+            "compositePrimaryKeys": {},
+            "uniqueConstraints": {},
+            "policies": {},
+            "checkConstraints": {},
+            "isRLSEnabled": true
+        }
+    },
+    "enums": {},
+    "schemas": {},
+    "sequences": {},
+    "roles": {},
+    "policies": {},
+    "views": {},
+    "_meta": {
+        "columns": {},
+        "schemas": {},
+        "tables": {}
+    }
+}
