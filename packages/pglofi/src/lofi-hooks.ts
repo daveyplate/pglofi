@@ -1,6 +1,8 @@
+import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { useMemo } from "react"
+import { useEffect, useMemo } from "react"
 
+import { sendToPullStreams } from "./postgrest/pull-stream-helpers"
 import { usePostgrestQuery } from "./postgrest/use-postgrest-query"
 import { useDb, useLofiConfig } from "./rxdb/rxdb"
 import type { InferQueryResult, QueryConfig } from "./shared/lofi-query-types"
@@ -43,6 +45,16 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
 
         const { data, isLoading } = useLocalQuery(schema, db && tableKey, query)
 
+        // Send remote data to pull streams for local sync
+        // biome-ignore lint/correctness/useExhaustiveDependencies: schema is stable
+        useEffect(() => {
+            if (remoteData && tableKey) {
+                const table = schema[tableKey]
+                const tableName = getTableName(table)
+                sendToPullStreams(schema, remoteData, tableName, query)
+            }
+        }, [remoteData])
+
         useStaleEntities({
             schema,
             data,
@@ -71,6 +83,21 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             error,
             refetch
         }
+    }
+
+    return { useQuery }
+}
+
+export const createPostgrestHooks = <
+    TSchema extends Record<string, AnyPgTable>
+>(
+    schema: TSchema
+) => {
+    function useQuery<
+        TTableKey extends keyof TSchema,
+        TQuery extends QueryConfig<TSchema, TSchema[TTableKey]>
+    >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
+        return usePostgrestQuery(schema, tableKey, query)
     }
 
     return { useQuery }

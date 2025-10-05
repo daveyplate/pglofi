@@ -6,7 +6,6 @@ import { transformPostgrestResponse } from "../shared/column-mapping"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { applyPostgrestFilters } from "./include-filters"
 import { postgrest } from "./postgrest"
-import { sendToPullStreams } from "./pull-stream-helpers"
 import { buildSelectString } from "./select-builder"
 
 export function usePostgrestQuery<
@@ -60,13 +59,6 @@ export function usePostgrestQuery<
                           table,
                           data as unknown as Record<string, unknown>[],
                           query.include
-                      )
-
-                      sendToPullStreams(
-                          schema,
-                          transformedData,
-                          tableName,
-                          query
                       )
 
                       return transformedData as unknown as TQueryResult[]
