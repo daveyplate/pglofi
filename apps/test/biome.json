@@ -1,0 +1,81 @@
+{
+    "$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+    "vcs": {
+        "enabled": true,
+        "clientKind": "git",
+        "useIgnoreFile": true
+    },
+    "files": {
+        "includes": [
+            "**",
+            "!auth-schema.ts",
+            "!**/*.css",
+            "!src/components/ui/**/*",
+            "!migrations/**/*"
+        ]
+    },
+    "formatter": {
+        "indentStyle": "space",
+        "indentWidth": 4
+    },
+    "linter": {
+        "rules": {
+            "a11y": {
+                "noSvgWithoutTitle": "off"
+            },
+            "correctness": {
+                "noUnusedFunctionParameters": "off",
+                "noUnusedImports": {
+                    "fix": "safe",
+                    "level": "info",
+                    "options": {}
+                },
+                "useParseIntRadix": "off",
+                "useHookAtTopLevel": "off"
+            },
+            "style": {
+                "noNonNullAssertion": "off",
+                "useSelfClosingElements": {
+                    "fix": "safe",
+                    "level": "info",
+                    "options": {}
+                },
+                "useTemplate": {
+                    "fix": "safe",
+                    "level": "info",
+                    "options": {}
+                }
+            },
+            "suspicious": {
+                "noArrayIndexKey": "off",
+                "noDoubleEquals": {
+                    "fix": "safe",
+                    "level": "warn",
+                    "options": {}
+                }
+            },
+            "nursery": {
+                "useSortedClasses": {
+                    "fix": "safe",
+                    "level": "info",
+                    "options": {
+                        "functions": [
+                            "cn"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "javascript": {
+        "formatter": {
+            "semicolons": "asNeeded",
+            "trailingCommas": "none"
+        }
+    },
+    "json": {
+        "formatter": {
+            "expand": "always"
+        }
+    }
+}
