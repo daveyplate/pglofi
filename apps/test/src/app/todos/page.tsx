@@ -173,11 +173,11 @@ export default function TodoList() {
                             <Button
                                 size="icon"
                                 variant={
-                                    todo.is_complete ? "default" : "outline"
+                                    todo.isComplete ? "default" : "outline"
                                 }
-                                className={`h-8 w-8 shrink-0 rounded-full ${todo.is_complete ? "bg-primary" : ""}`}
+                                className={`h-8 w-8 shrink-0 rounded-full ${todo.isComplete ? "bg-primary" : ""}`}
                                 onClick={() =>
-                                    toggleComplete(todo.id, todo.is_complete)
+                                    toggleComplete(todo.id, todo.isComplete)
                                 }
                                 disabled={loadingTodoId === todo.id.toString()}
                             >
@@ -185,13 +185,13 @@ export default function TodoList() {
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                     <Check
-                                        className={`h-4 w-4 ${todo.is_complete ? "text-primary-foreground" : ""}`}
+                                        className={`h-4 w-4 ${todo.isComplete ? "text-primary-foreground" : ""}`}
                                     />
                                 )}
                             </Button>
 
                             <span
-                                className={`flex-grow ${todo.is_complete ? "text-muted-foreground line-through" : ""}`}
+                                className={`flex-grow ${todo.isComplete ? "text-muted-foreground line-through" : ""}`}
                             >
                                 {todo.task}
                             </span>
