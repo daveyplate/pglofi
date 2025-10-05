@@ -22,7 +22,8 @@ export function Providers({ children }: { children: ReactNode }) {
         name: "better-auth-starter",
         schema,
         storage: "memory",
-        enabled: !!sessionData
+        enabled: !!sessionData,
+        sync: false
     })
 
     return (
