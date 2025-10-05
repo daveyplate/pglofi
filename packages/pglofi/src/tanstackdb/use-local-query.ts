@@ -2,7 +2,7 @@ import { createLiveQueryCollection } from "@tanstack/react-db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useEffect, useMemo, useState } from "react"
-import { tableCollections, useDb } from "@/lib/pglofi/rxdb/rxdb"
+import { tableCollections, useDb } from "../rxdb/rxdb"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { buildLocalQuery, flatToHierarchical } from "./local-query-helpers"
 

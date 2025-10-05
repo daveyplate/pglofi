@@ -1,6 +1,7 @@
 "use client"
 
 import { AuthUIProvider } from "@daveyplate/better-auth-ui"
+import { setPostgrestToken, useInitializeDb } from "@daveyplate/pglofi"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -9,8 +10,6 @@ import type { ReactNode } from "react"
 import { Toaster } from "sonner"
 import * as schema from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
-import { useInitializeDb } from "@/lib/pglofi/rxdb/rxdb"
-import { setPostgrestToken } from "../lib/pglofi/postgrest/postgrest"
 
 export const queryClient = new QueryClient()
 

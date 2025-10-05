@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { authClient } from "@/lib/auth-client"
 import { lofi } from "@/lib/lofi"
-import { pushToPullStream } from "@/lib/pglofi/postgrest/pull-stream-helpers"
 import TodoItem from "./todo-item"
 import TodoSkeleton from "./todo-skeleton"
 
@@ -74,23 +73,6 @@ export default function TodosPage() {
                     <PlusIcon />
                 </Button>
             </form>
-
-            <Button
-                onClick={() => {
-                    pushToPullStream("todos", [
-                        {
-                            id: crypto.randomUUID(),
-                            task: crypto.randomUUID(),
-                            userId: sessionData?.user.id,
-                            isComplete: false,
-                            updatedAt: new Date().toISOString(),
-                            createdAt: new Date().toISOString()
-                        }
-                    ])
-                }}
-            >
-                Bulk Write
-            </Button>
 
             <Input
                 type="text"

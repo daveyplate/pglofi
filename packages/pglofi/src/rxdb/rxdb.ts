@@ -16,7 +16,7 @@ import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { type Observable, Subject } from "rxjs"
-import { rxdbCollectionOptions } from "../../rxdb-db-collection/rxdb"
+import { rxdbCollectionOptions } from "../rxdb-db-collection/rxdb"
 
 addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)

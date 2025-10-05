@@ -1,26 +1,18 @@
 {
     "compilerOptions": {
-        "declaration": true,
-        "declarationMap": true,
-        "esModuleInterop": true,
-        "incremental": false,
-        "isolatedModules": true,
-        "lib": [
-            "es2022",
-            "DOM",
-            "DOM.Iterable"
-        ],
-        "module": "NodeNext",
-        "moduleDetection": "force",
-        "moduleResolution": "NodeNext",
-        "noUncheckedIndexedAccess": true,
-        "resolveJsonModule": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "target": "ES2022",
-        "jsx": "react-jsx",
+        "target": "es2018",
+        "module": "esnext",
         "outDir": "dist",
-        "rootDir": "src"
+        "lib": [
+            "dom",
+            "esnext"
+        ],
+        "declaration": true,
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true
     },
     "include": [
         "src"

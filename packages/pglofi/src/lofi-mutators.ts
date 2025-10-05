@@ -1,7 +1,7 @@
 import { getTableName, type InferInsertModel } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { v7 } from "uuid"
-import { tableCollections } from "@/lib/pglofi/rxdb/rxdb"
+import { tableCollections } from "./rxdb/rxdb"
 
 const SQL_DEFAULT_HANDLERS = {
     "now()": () => new Date().toISOString(),

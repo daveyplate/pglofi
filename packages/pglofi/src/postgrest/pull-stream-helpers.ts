@@ -1,6 +1,6 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { rxDb, sendToPullStream } from "@/lib/pglofi/rxdb/rxdb"
+import { rxDb, sendToPullStream } from "../rxdb/rxdb"
 import type { AnyRelationConfig, QueryConfig } from "../shared/lofi-query-types"
 
 /**

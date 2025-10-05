@@ -13,7 +13,7 @@ import {
 } from "@tanstack/react-db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { tableCollections } from "@/lib/pglofi/rxdb/rxdb"
+import { tableCollections } from "../rxdb/rxdb"
 import { type FKInfo, getFKInfo } from "../shared/fk-helpers"
 import type { OrderByConfig, QueryConfig } from "../shared/lofi-query-types"
 import {
