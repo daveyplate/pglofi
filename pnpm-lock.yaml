@@ -26,6 +26,9 @@ importers:
       '@daveyplate/better-auth-ui':
         specifier: ^3.2.5
         version: 3.2.5(555427644ab8fdf430bbb76834dff19a)
+      '@daveyplate/pglofi':
+        specifier: workspace:*
+        version: link:../../packages/pglofi
       '@neondatabase/serverless':
         specifier: ^1.0.2
         version: 1.0.2
