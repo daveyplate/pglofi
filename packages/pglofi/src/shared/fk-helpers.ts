@@ -1,5 +1,6 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { tsToSqlColumn } from "./column-mapping"
 
 // Helper to get foreign keys from a Drizzle table
 export function getForeignKeys(table: AnyPgTable) {
@@ -128,19 +129,25 @@ export function resolveForeignKey(
     const { currentColumn, relatedColumn: parsedRelatedColumn } =
         parseOnParameter(on)
 
+    // Convert TypeScript property names to SQL column names
+    const currentSqlColumn = tsToSqlColumn(currentTable, currentColumn)
+    const parsedRelatedSqlColumn = parsedRelatedColumn
+        ? tsToSqlColumn(relatedTable, parsedRelatedColumn)
+        : undefined
+
     // Handle shorthand: infer related column if not provided
-    const relatedColumn =
-        parsedRelatedColumn ??
+    const relatedSqlColumn =
+        parsedRelatedSqlColumn ??
         (many
             ? findForeignKeyOrThrow(
                   relatedTable,
                   relatedTableName,
                   currentTableName,
-                  { foreignColumn: currentColumn }
+                  { foreignColumn: currentSqlColumn }
               ).localColumn
             : "id") // Shorthand assumes 'id' on related table
 
-    // Validate and return FK info based on relationship direction
+    // Validate and return FK info based on relationship direction (using SQL column names)
     if (many) {
         // One-to-many: FK must be on related table
         findForeignKeyOrThrow(
@@ -148,14 +155,14 @@ export function resolveForeignKey(
             relatedTableName,
             currentTableName,
             {
-                localColumn: relatedColumn,
-                foreignColumn: currentColumn
+                localColumn: relatedSqlColumn,
+                foreignColumn: currentSqlColumn
             }
         )
 
         return {
-            localColumn: relatedColumn,
-            foreignColumn: currentColumn,
+            localColumn: relatedSqlColumn,
+            foreignColumn: currentSqlColumn,
             foreignTable: relatedTableName,
             isOneToMany: true
         }
@@ -163,14 +170,14 @@ export function resolveForeignKey(
 
     // Many-to-one: try FK on current table first
     const fk = findForeignKey(currentTable, relatedTableName, {
-        localColumn: currentColumn,
-        foreignColumn: relatedColumn
+        localColumn: currentSqlColumn,
+        foreignColumn: relatedSqlColumn
     })
 
     if (fk) {
         return {
-            localColumn: currentColumn,
-            foreignColumn: relatedColumn,
+            localColumn: currentSqlColumn,
+            foreignColumn: relatedSqlColumn,
             foreignTable: relatedTableName,
             isOneToMany: false
         }
@@ -178,21 +185,21 @@ export function resolveForeignKey(
 
     // Fallback: try one-to-many pattern
     const reverseFk = findForeignKey(relatedTable, currentTableName, {
-        localColumn: relatedColumn,
-        foreignColumn: currentColumn
+        localColumn: relatedSqlColumn,
+        foreignColumn: currentSqlColumn
     })
 
     if (reverseFk) {
         return {
-            localColumn: relatedColumn,
-            foreignColumn: currentColumn,
+            localColumn: relatedSqlColumn,
+            foreignColumn: currentSqlColumn,
             foreignTable: relatedTableName,
             isOneToMany: true
         }
     }
 
     throw new Error(
-        `No foreign key found between "${currentTableName}.${currentColumn}" and "${relatedTableName}.${relatedColumn}"`
+        `No foreign key found between "${currentTableName}.${currentColumn}" and "${relatedTableName}.${parsedRelatedColumn || "id"}"`
     )
 }
 

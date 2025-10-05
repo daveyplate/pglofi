@@ -32,17 +32,32 @@ export let tableCollections: Record<string, Collection<object, string>> = {}
 
 export let pullStreams: Record<string, Subject<unknown>> = {}
 
-export const sendToPullStream = (table: string, value: unknown) => {
+export const sendToPullStream = (
+    table: string,
+    {
+        checkpoint,
+        documents
+    }: { checkpoint: unknown; documents: Record<string, unknown>[] }
+) => {
     if (!rxDb) throw new Error("Database not initialized")
 
+    const mappedDocuments = documents.map(({ id, ...rest }) => {
+        return {
+            ...rest,
+            id: `${id}`
+        }
+    })
+
+    console.log("mappedDocuments", mappedDocuments)
+
     if (rxDb.isLeader()) {
-        pullStreams[table].next(value)
+        pullStreams[table].next({ checkpoint, documents: mappedDocuments })
     } else {
         rxDb.leaderElector().broadcastChannel.postMessage({
             type: "pull-stream",
             payload: {
                 table,
-                value
+                value: { checkpoint, documents: mappedDocuments }
             }
         })
     }
@@ -286,9 +301,12 @@ async function createDatabase({
 
                                 if (error) throw error
 
-                                pullStreams[tableName].next({
+                                sendToPullStream(tableName, {
                                     checkpoint: {},
-                                    documents: data
+                                    documents: data as unknown as Record<
+                                        string,
+                                        unknown
+                                    >[]
                                 })
                             }
                         }

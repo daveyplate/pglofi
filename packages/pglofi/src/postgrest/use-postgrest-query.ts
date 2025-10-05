@@ -2,6 +2,7 @@ import { skipToken, useQuery } from "@tanstack/react-query"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 
+import { transformPostgrestResponse } from "../shared/column-mapping"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { applyPostgrestFilters } from "./include-filters"
 import { postgrest } from "./postgrest"
@@ -19,7 +20,8 @@ export function usePostgrestQuery<
 ) {
     type TQueryResult = InferQueryResult<TSchema, TTableKey, TQuery>
 
-    const tableName = tableKey ? getTableName(schema[tableKey]) : null
+    const table = tableKey ? schema[tableKey] : null
+    const tableName = table ? getTableName(table) : null
     const selectString = tableKey
         ? buildSelectString(schema, tableKey, query)
         : "*"
@@ -28,20 +30,46 @@ export function usePostgrestQuery<
         queryKey: tableName
             ? [`pglofi:${tableName}:query`, JSON.stringify(query)]
             : [],
-        queryFn: !tableName
-            ? skipToken
-            : async () => {
-                  let queryBuilder = postgrest
-                      .from(tableName)
-                      .select(selectString)
-                  queryBuilder = applyPostgrestFilters(queryBuilder, query)
+        queryFn:
+            !tableName || !table
+                ? skipToken
+                : async () => {
+                      let queryBuilder = postgrest
+                          .from(tableName)
+                          .select(selectString)
+                      queryBuilder = applyPostgrestFilters(
+                          queryBuilder,
+                          query,
+                          table,
+                          schema
+                      )
 
-                  const { data, error } = await queryBuilder
-                  if (error) throw error
+                      const { data, error } = await queryBuilder
+                      if (error) throw error
 
-                  sendToPullStreams(schema, data, tableName, query)
+                      // Ensure data is an array before transforming
+                      if (!Array.isArray(data)) {
+                          throw new Error(
+                              "Expected array response from PostgREST"
+                          )
+                      }
 
-                  return data as unknown as TQueryResult[]
-              }
+                      // Transform SQL column names to TypeScript property names
+                      const transformedData = transformPostgrestResponse(
+                          schema,
+                          table,
+                          data as unknown as Record<string, unknown>[],
+                          query.include
+                      )
+
+                      sendToPullStreams(
+                          schema,
+                          transformedData,
+                          tableName,
+                          query
+                      )
+
+                      return transformedData as unknown as TQueryResult[]
+                  }
     })
 }

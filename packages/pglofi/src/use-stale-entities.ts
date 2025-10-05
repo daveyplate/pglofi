@@ -6,6 +6,7 @@ import { useEffect, useState } from "react"
 import { postgrest } from "./postgrest/postgrest"
 import { pushToPullStream } from "./postgrest/pull-stream-helpers"
 import { tableCollections } from "./rxdb/rxdb"
+import { transformSqlRowsToTs } from "./shared/column-mapping"
 import type { QueryConfig } from "./shared/lofi-query-types"
 
 interface UseStaleEntitiesParams<
@@ -228,6 +229,11 @@ export function useStaleEntities<
     useQueries({
         queries: Object.entries(staleEntities).map(([table, entities]) => {
             const entityIds = entities.map((e) => e.id as string)
+            // Find the Drizzle table from schema for column mapping
+            const drizzleTable = Object.values(schema).find(
+                (t) => getTableName(t) === table
+            )
+
             return {
                 queryKey: [`pglofi:${table}`, "in", entityIds.sort().join(",")],
                 queryFn: async () => {
@@ -238,14 +244,23 @@ export function useStaleEntities<
 
                     if (error) throw error
 
-                    if (data.length > 0) {
-                        pushToPullStream(table, data)
+                    // Transform SQL column names to TypeScript property names
+                    const transformedData = drizzleTable
+                        ? transformSqlRowsToTs(drizzleTable, data)
+                        : data
+
+                    if (transformedData.length > 0) {
+                        pushToPullStream(table, transformedData)
                     }
 
                     const missingEntities = entityIds
                         .filter(
                             (entityId) =>
-                                !data.find((row) => row.id === entityId)
+                                !transformedData.find(
+                                    (row) =>
+                                        (row as Record<string, unknown>).id ===
+                                        entityId
+                                )
                         )
                         .map((entityId) =>
                             tableCollections[table].get(entityId)
@@ -262,7 +277,7 @@ export function useStaleEntities<
                         )
                     }
 
-                    return data
+                    return transformedData
                 },
                 enabled: entityIds.length > 0
             }

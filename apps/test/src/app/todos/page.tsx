@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import type { Todo } from "@/database/schema"
 import { useToken } from "@/hooks/use-token"
+import { lofi } from "@/lib/lofi"
 
 const getPg = (accessToken: string) => {
     return new PostgrestClient(process.env.NEXT_PUBLIC_NEON_DATA_API_URL!, {
@@ -23,6 +24,14 @@ export default function TodoList() {
     const [newTask, setNewTask] = useState("")
     const [isLoading, setIsLoading] = useState(false)
     const [loadingTodoId, setLoadingTodoId] = useState<string | null>(null)
+
+    const { data: newTodos } = lofi.useQuery(sessionData && "todos", {
+        where: {
+            userId: sessionData?.user.id
+        }
+    })
+
+    console.log({ newTodos })
 
     const loadTodos = useCallback(async () => {
         if (!token || !sessionData?.user?.id) return

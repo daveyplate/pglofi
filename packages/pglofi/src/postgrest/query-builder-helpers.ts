@@ -1,5 +1,6 @@
 import type { PostgrestFilterBuilder } from "@supabase/postgrest-js"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { tsToSqlColumn } from "../shared/column-mapping"
 import {
     getOperatorAndValue,
     isLogicalOperator,
@@ -60,12 +61,14 @@ function applyOperator(
 /**
  * Applies where conditions to a PostgREST query builder recursively.
  * Handles AND/OR logical operators and negations.
+ * Converts TypeScript column names to SQL column names.
  */
 export function applyWhereConditions(
     // biome-ignore lint/suspicious/noExplicitAny: Supabase query builder type
     queryBuilder: PostgrestFilterBuilder<any, any, any, any>,
     whereConfig: WhereConfig<AnyPgTable>,
-    prefix = ""
+    prefix = "",
+    table?: AnyPgTable
 ) {
     let builder = queryBuilder
 
@@ -81,7 +84,11 @@ export function applyWhereConditions(
                     const normalized = normalizeWhereCondition(condition)
                     const { operator, value, isNegated } =
                         getOperatorAndValue(normalized)
-                    const col = prefix ? `${prefix}.${column}` : column
+                    // Convert TS column name to SQL column name
+                    const sqlColumn = table
+                        ? tsToSqlColumn(table, column)
+                        : column
+                    const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
 
                     if (isNegated) {
                         const formattedValue = formatValueForNegation(
@@ -111,7 +118,11 @@ export function applyWhereConditions(
                     const normalized = normalizeWhereCondition(condition)
                     const { operator, value, isNegated } =
                         getOperatorAndValue(normalized)
-                    const col = prefix ? `${prefix}.${column}` : column
+                    // Convert TS column name to SQL column name
+                    const sqlColumn = table
+                        ? tsToSqlColumn(table, column)
+                        : column
+                    const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
 
                     // For OR, build condition strings (negation syntax: not.operator.value)
                     const condStr = isNegated
@@ -133,7 +144,9 @@ export function applyWhereConditions(
 
         const normalized = normalizeWhereCondition(condition)
         const { operator, value, isNegated } = getOperatorAndValue(normalized)
-        const col = prefix ? `${prefix}.${column}` : column
+        // Convert TS column name to SQL column name
+        const sqlColumn = table ? tsToSqlColumn(table, column) : column
+        const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
 
         if (isNegated) {
             const formattedValue = formatValueForNegation(operator, value)

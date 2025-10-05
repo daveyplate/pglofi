@@ -14,6 +14,28 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true
     },
+    databaseHooks: {
+        session: {
+            create: {
+                before: async (session) => {
+                    session.token = (
+                        await auth.api.signJWT({
+                            body: {
+                                payload: {
+                                    sub: session.userId,
+                                    role: "authenticated",
+                                    iat: Math.floor(Date.now() / 1000),
+                                    exp: Math.floor(
+                                        session.expiresAt.getTime() / 1000
+                                    )
+                                }
+                            }
+                        })
+                    ).token
+                }
+            }
+        }
+    },
     plugins: [
         jwt({
             jwt: {
