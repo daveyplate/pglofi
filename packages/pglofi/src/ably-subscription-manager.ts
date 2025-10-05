@@ -1,8 +1,10 @@
 import type * as Ably from "ably"
+import { getTableName } from "drizzle-orm"
 import type { RxDatabase } from "rxdb"
 import { getAbly } from "./ably/ably-client"
 import { postgrest } from "./postgrest/postgrest"
-import { sendToPullStream } from "./rxdb/rxdb"
+import { getLofiConfig, sendToPullStream } from "./rxdb/rxdb"
+import { transformSqlRowsToTs } from "./shared/column-mapping"
 
 /**
  * Global Ably subscription manager with reference counting.
@@ -51,16 +53,19 @@ class AblySubscriptionManager {
 
                 const handleMessage = async (message: Ably.Message) => {
                     try {
-                        const entityId = message.extras?.headers?.id
+                        const rawEntityId = message.extras?.headers?.id
                         const updatedAt = message.extras?.headers?.updatedAt
                         const messageName = message.name
 
-                        if (!entityId) {
+                        if (!rawEntityId) {
                             console.warn(
                                 `[AblySubscriptionManager] No entity ID in message for channel: ${channelName}`
                             )
                             return
                         }
+
+                        // Convert entity ID to string to match RxDB storage format
+                        const entityId = String(rawEntityId)
 
                         // Parse table name from channel (format: tableName:columnName:value)
                         const tableName = channelName.split(":")[0]
@@ -119,9 +124,23 @@ class AblySubscriptionManager {
                             }
 
                             if (messageData) {
+                                // Transform SQL column names to TypeScript property names
+                                const config = getLofiConfig()
+                                const schemaTable = config?.schema
+                                    ? Object.values(config.schema).find(
+                                          (t) => getTableName(t) === tableName
+                                      )
+                                    : null
+
+                                const transformedData = schemaTable
+                                    ? transformSqlRowsToTs(schemaTable, [
+                                          messageData
+                                      ])
+                                    : [messageData]
+
                                 sendToPullStream(tableName, {
                                     checkpoint: {},
-                                    documents: [messageData]
+                                    documents: transformedData
                                 })
                             }
                             return
@@ -164,9 +183,23 @@ class AblySubscriptionManager {
 
                         // Update RxDB via pull stream
                         if (messageData) {
+                            // Transform SQL column names to TypeScript property names
+                            const config = getLofiConfig()
+                            const schemaTable = config?.schema
+                                ? Object.values(config.schema).find(
+                                      (t) => getTableName(t) === tableName
+                                  )
+                                : null
+
+                            const transformedData = schemaTable
+                                ? transformSqlRowsToTs(schemaTable, [
+                                      messageData
+                                  ])[0]
+                                : messageData
+
                             sendToPullStream(tableName, {
                                 checkpoint: {},
-                                documents: [{ ...docData, ...messageData }]
+                                documents: [{ ...docData, ...transformedData }]
                             })
                         }
                     } catch (error) {

@@ -21,6 +21,10 @@ export const todos = pgTable(
         isComplete: boolean("is_complete").notNull().default(false),
         insertedAt: timestamp("inserted_at", { withTimezone: true })
             .defaultNow()
+            .notNull(),
+        updatedAt: timestamp("updated_at", { withTimezone: true })
+            .defaultNow()
+            .$onUpdate(() => new Date())
             .notNull()
     },
     (table) => [

@@ -1,133 +1,42 @@
 "use client"
 
 import { useAuthenticate } from "@daveyplate/better-auth-ui"
-import { PostgrestClient } from "@supabase/postgrest-js"
 import { Check, Loader2, Plus, Trash2 } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { toast } from "sonner"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import type { Todo } from "@/database/schema"
-import { useToken } from "@/hooks/use-token"
 import { lofi } from "@/lib/lofi"
-
-const getPg = (accessToken: string) => {
-    return new PostgrestClient(process.env.NEXT_PUBLIC_NEON_DATA_API_URL!, {
-        headers: { Authorization: `Bearer ${accessToken}` }
-    })
-}
 
 export default function TodoList() {
     const { data: sessionData } = useAuthenticate()
-    const { token } = useToken()
-    const [todos, setTodos] = useState<Array<Todo>>([])
     const [newTask, setNewTask] = useState("")
-    const [isLoading, setIsLoading] = useState(false)
-    const [loadingTodoId, setLoadingTodoId] = useState<string | null>(null)
 
-    const { data: newTodos } = lofi.useQuery(sessionData && "todos", {
+    const { data: todos, isLoading } = lofi.useQuery(sessionData && "todos", {
         where: {
             userId: sessionData?.user.id
         }
     })
 
-    console.log({ newTodos })
-
-    const loadTodos = useCallback(async () => {
-        if (!token || !sessionData?.user?.id) return
-        setIsLoading(true)
-
-        const pg = getPg(token)
-        const { data, error } = await pg
-            .from("todos")
-            .select("*")
-            .eq("user_id", sessionData?.user.id)
-
-        if (data) {
-            setTodos(data)
-        }
-        if (error) {
-            console.error("Failed to load todos:", error)
-            toast.error("Failed to load todos")
-        }
-
-        setIsLoading(false)
-    }, [token, sessionData?.user?.id])
-
-    useEffect(() => {
-        loadTodos()
-    }, [loadTodos])
-
     async function createTodo(e: React.FormEvent) {
         e.preventDefault()
-        if (!token || !newTask.trim()) return
+        if (!sessionData || !newTask.trim()) return
 
-        setIsLoading(true)
-
-        const pg = getPg(token)
-        const { error } = await pg.from("todos").insert({
-            task: newTask.trim()
+        lofi.insert("todos", {
+            task: newTask.trim(),
+            userId: sessionData.user.id
         })
-
-        setNewTask("")
-        await loadTodos()
-
-        if (error) {
-            console.error("Failed to create todo:", error)
-            toast.error("Failed to create todo")
-        } else {
-            toast.success("Todo added")
-        }
-
-        setIsLoading(false)
     }
 
     async function toggleComplete(todoId: number, isComplete: boolean) {
-        if (!token) return
-        setLoadingTodoId(todoId.toString())
+        if (!sessionData) return
 
-        const pg = getPg(token)
-        const { error } = await pg
-            .from("todos")
-            .update({ is_complete: !isComplete })
-            .eq("id", todoId)
-            .eq("user_id", sessionData?.user.id)
-
-        await loadTodos()
-
-        if (error) {
-            console.error("Failed to update todo:", error)
-            toast.error("Failed to update todo")
-        } else {
-            toast.success(
-                isComplete ? "Todo marked as incomplete" : "Todo completed"
-            )
-        }
-
-        setLoadingTodoId(null)
+        lofi.update("todos", String(todoId), { isComplete: !isComplete })
     }
 
     async function deleteTodo(todoId: number) {
-        if (!token) return
-        setLoadingTodoId(todoId.toString())
+        if (!sessionData) return
 
-        const pg = getPg(token)
-        const { error } = await pg
-            .from("todos")
-            .delete()
-            .eq("id", todoId)
-            .eq("user_id", sessionData?.user.id)
-
-        await loadTodos()
-
-        if (error) {
-            console.error("Failed to delete todo:", error)
-            toast.error("Failed to delete todo")
-        } else {
-            toast.success("Todo deleted")
-        }
-
-        setLoadingTodoId(null)
+        lofi.delete("todos", String(todoId))
     }
 
     return (
@@ -163,18 +72,18 @@ export default function TodoList() {
                 </form>
             </div>
 
-            {isLoading && todos.length === 0 ? (
+            {isLoading ? (
                 <div className="py-8 text-center">
                     <Loader2 className="mx-auto mb-4 h-8 w-8 animate-spin" />
                     <p>Loading your todos...</p>
                 </div>
-            ) : todos.length === 0 ? (
+            ) : todos?.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                     <p>You don't have any todos yet. Add one to get started!</p>
                 </div>
             ) : (
                 <div className="divide-y rounded-lg border bg-card shadow-sm">
-                    {todos.map((todo) => (
+                    {todos?.map((todo) => (
                         <div
                             key={todo.id.toString()}
                             className="group flex items-center gap-3 p-4"
@@ -188,15 +97,10 @@ export default function TodoList() {
                                 onClick={() =>
                                     toggleComplete(todo.id, todo.isComplete)
                                 }
-                                disabled={loadingTodoId === todo.id.toString()}
                             >
-                                {loadingTodoId === todo.id.toString() ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Check
-                                        className={`h-4 w-4 ${todo.isComplete ? "text-primary-foreground" : ""}`}
-                                    />
-                                )}
+                                <Check
+                                    className={`h-4 w-4 ${todo.isComplete ? "text-primary-foreground" : ""}`}
+                                />
                             </Button>
 
                             <span
@@ -210,7 +114,6 @@ export default function TodoList() {
                                 variant="ghost"
                                 className="h-8 w-8 opacity-0 transition-opacity group-hover:opacity-100"
                                 onClick={() => deleteTodo(todo.id)}
-                                disabled={loadingTodoId === todo.id.toString()}
                             >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>

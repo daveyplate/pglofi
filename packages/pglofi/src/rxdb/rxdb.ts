@@ -22,6 +22,10 @@ addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
 
 import { postgrest } from "../postgrest/postgrest"
+import {
+    transformSqlRowsToTs,
+    transformTsToSql
+} from "../shared/column-mapping"
 import { notify, subscribe } from "../shared/subscriptions"
 import type { LofiConfig } from "./lofi-config"
 
@@ -41,14 +45,13 @@ export const sendToPullStream = (
 ) => {
     if (!rxDb) throw new Error("Database not initialized")
 
+    // Always convert IDs to strings before storing in RxDB
     const mappedDocuments = documents.map(({ id, ...rest }) => {
         return {
-            ...rest,
-            id: `${id}`
+            id: `${id}`,
+            ...rest
         }
     })
-
-    console.log("mappedDocuments", mappedDocuments)
 
     if (rxDb.isLeader()) {
         pullStreams[table].next({ checkpoint, documents: mappedDocuments })
@@ -105,7 +108,8 @@ async function createDatabase({
     name,
     schema,
     devMode = process.env.NODE_ENV === "development",
-    storage
+    storage,
+    ablyToken = process.env.NEXT_PUBLIC_ABLY_API_KEY
 }: LofiConfig): Promise<RxDatabase> {
     const version = 0
 
@@ -222,6 +226,7 @@ async function createDatabase({
 
     for (const tableKey of schemaTableKeys) {
         const tableName = getTableName(schema[tableKey])
+        const schemaTable = schema[tableKey]
 
         const tableCollection = createCollection(
             rxdbCollectionOptions({
@@ -254,27 +259,39 @@ async function createDatabase({
 
                         if (error) throw error
 
+                        // Transform SQL column names to TypeScript property names
+                        const transformedMasterState = realMasterState
+                            ? transformSqlRowsToTs(schemaTable, [
+                                  realMasterState
+                              ])[0]
+                            : null
+
                         if (
-                            (realMasterState &&
+                            (transformedMasterState &&
                                 !changeRow.assumedMasterState) ||
-                            (realMasterState &&
+                            (transformedMasterState &&
                                 changeRow.assumedMasterState &&
                                 /*
                                  * For simplicity we detect conflicts on the server by only compare the updateAt value.
                                  * In reality you might want to do a more complex check or do a deep-equal comparison.
                                  */
                                 new Date(
-                                    realMasterState.updatedAt
+                                    (
+                                        transformedMasterState as Record<
+                                            string,
+                                            unknown
+                                        >
+                                    ).updatedAt as string
                                 ).getTime() !==
                                     new Date(
                                         changeRow.assumedMasterState.updatedAt
                                     ).getTime())
                         ) {
                             // we have a conflict
-                            conflicts.push(realMasterState)
+                            conflicts.push(transformedMasterState)
                             console.log(
                                 "conflict",
-                                realMasterState,
+                                transformedMasterState,
                                 changeRow.assumedMasterState
                             )
                         } else {
@@ -293,20 +310,33 @@ async function createDatabase({
                                 delete update._deleted
                                 delete update.isPending
 
+                                // Transform TypeScript property names to SQL column names
+                                const sqlUpdate = transformTsToSql(
+                                    schemaTable,
+                                    update
+                                )
+
                                 const { data, error } = await postgrest
                                     .from(tableName)
-                                    .upsert(update, {
+                                    .upsert(sqlUpdate, {
                                         onConflict: "id"
                                     })
 
                                 if (error) throw error
 
+                                // Transform SQL column names back to TypeScript property names
+                                const transformedData = transformSqlRowsToTs(
+                                    schemaTable,
+                                    data || []
+                                )
+
                                 sendToPullStream(tableName, {
                                     checkpoint: {},
-                                    documents: data as unknown as Record<
-                                        string,
-                                        unknown
-                                    >[]
+                                    documents:
+                                        transformedData as unknown as Record<
+                                            string,
+                                            unknown
+                                        >[]
                                 })
                             }
                         }
@@ -342,6 +372,10 @@ export function useDb() {
     }
 
     return useSyncExternalStore(subscribeToDb, getSnapshot, getSnapshot)
+}
+
+export function getLofiConfig() {
+    return lofiConfig
 }
 
 export function useLofiConfig() {

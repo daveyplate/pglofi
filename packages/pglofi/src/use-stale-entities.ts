@@ -207,13 +207,12 @@ export function useStaleEntities<
             localEntitiesByTable
         )) {
             const remoteEntities = remoteEntitiesByTable[table] || []
-            const remoteIdSet = new Set(
-                remoteEntities.map((e) => e.id as string)
-            )
+            // Ensure all IDs are strings for comparison
+            const remoteIdSet = new Set(remoteEntities.map((e) => String(e.id)))
 
             const stale = localEntities.filter(
                 (entity) =>
-                    !remoteIdSet.has(entity.id as string) &&
+                    !remoteIdSet.has(String(entity.id)) &&
                     !(entity as { isPending?: boolean }).isPending
             )
 
@@ -258,8 +257,9 @@ export function useStaleEntities<
                             (entityId) =>
                                 !transformedData.find(
                                     (row) =>
-                                        (row as Record<string, unknown>).id ===
-                                        entityId
+                                        String(
+                                            (row as Record<string, unknown>).id
+                                        ) === entityId
                                 )
                         )
                         .map((entityId) =>

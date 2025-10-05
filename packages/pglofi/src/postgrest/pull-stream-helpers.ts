@@ -37,7 +37,7 @@ function extractRelatedDocs<TSchema extends Record<string, AnyPgTable>>(
     const existing = relatedDocsByTable.get(relatedTableName)
     if (existing) {
         for (const relatedDoc of relatedDocs) {
-            const id = relatedDoc.id
+            const id = relatedDoc.id != null ? String(relatedDoc.id) : null
             if (id && !existing.seenIds.has(id)) {
                 existing.seenIds.add(id)
                 existing.docs.push(relatedDoc)
@@ -47,7 +47,7 @@ function extractRelatedDocs<TSchema extends Record<string, AnyPgTable>>(
         const seenIds = new Set<string>()
         const uniqueDocs = []
         for (const relatedDoc of relatedDocs) {
-            const id = relatedDoc.id
+            const id = relatedDoc.id != null ? String(relatedDoc.id) : null
             if (id && !seenIds.has(id)) {
                 seenIds.add(id)
                 uniqueDocs.push(relatedDoc)
@@ -77,14 +77,17 @@ export async function pushToPullStream(
     if (!rxDb) throw new Error("Database not initialized")
 
     const collection = rxDb[tableName]
-    const ids = rows.map((row) => row.id).filter(Boolean)
+    // Convert IDs to strings to match RxDB storage format
+    const ids = rows.map((row) => String(row.id)).filter(Boolean)
     const existingDocs = await collection.storageInstance.findDocumentsById(
         ids as string[],
         true
     )
 
     const filteredRows = rows.filter((row) => {
-        const existingDoc = existingDocs.find((doc) => doc.id === row.id)
+        // Ensure row.id is a string for comparison
+        const rowId = String(row.id)
+        const existingDoc = existingDocs.find((doc) => doc.id === rowId)
 
         if (!existingDoc) {
             return true

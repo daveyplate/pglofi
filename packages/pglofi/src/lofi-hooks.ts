@@ -2,7 +2,7 @@ import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useMemo } from "react"
 
 import { usePostgrestQuery } from "./postgrest/use-postgrest-query"
-import { useDb } from "./rxdb/rxdb"
+import { useDb, useLofiConfig } from "./rxdb/rxdb"
 import type { InferQueryResult, QueryConfig } from "./shared/lofi-query-types"
 import { useLocalQuery } from "./tanstackdb/use-local-query"
 import { useAblyChannels } from "./use-ably-channels"
@@ -31,6 +31,7 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
         query?: TQuery
     ): UseLofiQueryResult<TSchema, TTableKey, TQuery> {
         const db = useDb()
+        const config = useLofiConfig()
 
         const {
             data: remoteData,
@@ -59,7 +60,9 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
         )
 
         // Determine Ably channels and subscribe to them for real-time updates
-        useAblyChannels(schema, tableKey, query, data)
+        // Only execute if sync is set to "ably" and ablyToken is present
+        const shouldUseAbly = config?.sync === "ably" && !!config?.ablyToken
+        useAblyChannels(schema, shouldUseAbly ? tableKey : null, query, data)
 
         return {
             data,

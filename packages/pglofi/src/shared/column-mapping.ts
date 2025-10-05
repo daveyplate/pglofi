@@ -90,7 +90,8 @@ export function transformSqlToTs<T = Record<string, unknown>>(
 
     for (const [sqlKey, value] of Object.entries(sqlRow)) {
         const tsKey = reverseMapping.get(sqlKey) || sqlKey
-        tsRow[tsKey] = value
+        // Convert ID to string to match RxDB storage format
+        tsRow[tsKey] = tsKey === "id" && value != null ? String(value) : value
     }
 
     return tsRow as T
