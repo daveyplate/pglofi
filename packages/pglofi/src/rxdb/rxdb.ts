@@ -264,7 +264,12 @@ async function createDatabase({
                             .eq("id", changeRow.newDocumentState.id)
                             .maybeSingle()
 
-                        if (error) throw error
+                        if (error) {
+                            if (!error.code) throw error
+
+                            conflicts.push(changeRow.assumedMasterState)
+                            continue
+                        }
 
                         // Transform SQL column names to TypeScript property names
                         const transformedMasterState = realMasterState
@@ -308,7 +313,11 @@ async function createDatabase({
                                     .delete()
                                     .eq("id", changeRow.newDocumentState.id)
 
-                                if (error) throw error
+                                if (error) {
+                                    if (!error.code) throw error
+
+                                    conflicts.push(transformedMasterState)
+                                }
                             } else {
                                 const update = {
                                     ...changeRow.newDocumentState
@@ -329,7 +338,11 @@ async function createDatabase({
                                         onConflict: "id"
                                     })
 
-                                if (error) throw error
+                                if (error) {
+                                    if (!error.code) throw error
+
+                                    conflicts.push(transformedMasterState)
+                                }
 
                                 // Transform SQL column names back to TypeScript property names
                                 const transformedData = transformSqlRowsToTs(
