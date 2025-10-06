@@ -22,7 +22,8 @@ export function Providers({ children }: { children: ReactNode }) {
         name: "neon-lofi-playground",
         schema,
         storage: "localstorage",
-        enabled: !!sessionData
+        enabled: !!sessionData,
+        sync: "ably"
     })
 
     return (

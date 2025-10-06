@@ -83,6 +83,14 @@ async function destroyDatabase() {
 }
 
 export async function initializeDb(config: LofiConfig) {
+    if (config.devMode === undefined) {
+        config.devMode = process.env.NODE_ENV === "development"
+    }
+
+    if (config.ablyToken === undefined) {
+        config.ablyToken = process.env.NEXT_PUBLIC_ABLY_API_KEY
+    }
+
     // Check if config has changed
     if (
         !lofiConfig ||
@@ -107,9 +115,8 @@ export async function initializeDb(config: LofiConfig) {
 async function createDatabase({
     name,
     schema,
-    devMode = process.env.NODE_ENV === "development",
-    storage,
-    ablyToken = process.env.NEXT_PUBLIC_ABLY_API_KEY
+    devMode,
+    storage
 }: LofiConfig): Promise<RxDatabase> {
     const version = 0
 
