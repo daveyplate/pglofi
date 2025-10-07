@@ -7,10 +7,7 @@
     },
     "files": {
         "ignoreUnknown": true,
-        "includes": [
-            "**",
-            "!node_modules"
-        ]
+        "includes": ["**", "!node_modules"]
     },
     "formatter": {
         "enabled": true,
@@ -61,9 +58,7 @@
                     "fix": "safe",
                     "level": "info",
                     "options": {
-                        "functions": [
-                            "cn"
-                        ]
+                        "functions": ["cn"]
                     }
                 }
             }
@@ -84,11 +79,6 @@
         "formatter": {
             "semicolons": "asNeeded",
             "trailingCommas": "none"
-        }
-    },
-    "json": {
-        "formatter": {
-            "expand": "always"
         }
     }
 }

@@ -3,10 +3,7 @@
         "target": "es2018",
         "module": "esnext",
         "outDir": "dist",
-        "lib": [
-            "dom",
-            "esnext"
-        ],
+        "lib": ["dom", "esnext"],
         "declaration": true,
         "moduleResolution": "node",
         "sourceMap": true,
@@ -14,16 +11,9 @@
         "esModuleInterop": true,
         "skipLibCheck": true
     },
-    "include": [
-        "src"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist"
-    ],
+    "include": ["src"],
+    "exclude": ["node_modules", "dist"],
     "watchOptions": {
-        "excludeFiles": [
-            "package.json"
-        ]
+        "excludeFiles": ["package.json"]
     }
 }

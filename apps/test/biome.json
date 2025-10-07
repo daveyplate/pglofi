@@ -1,4 +1,5 @@
 {
+    "root": false,
     "$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
     "vcs": {
         "enabled": true,
@@ -68,9 +69,7 @@
                     "fix": "safe",
                     "level": "info",
                     "options": {
-                        "functions": [
-                            "cn"
-                        ]
+                        "functions": ["cn"]
                     }
                 }
             }
@@ -91,11 +90,6 @@
         "formatter": {
             "semicolons": "asNeeded",
             "trailingCommas": "none"
-        }
-    },
-    "json": {
-        "formatter": {
-            "expand": "always"
         }
     }
 }
