@@ -23,7 +23,11 @@ export function Providers({ children }: { children: ReactNode }) {
         schema,
         storage: "localstorage",
         enabled: !!sessionData,
-        sync: "ably"
+        sync: "ably",
+        version: 0,
+        migrateDocument: async (tableName, version, oldDoc, collection) => {
+            return oldDoc
+        }
     })
 
     return (

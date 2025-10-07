@@ -4,12 +4,14 @@ import { useEffect, useSyncExternalStore } from "react"
 import {
     addRxPlugin,
     createRxDatabase,
+    type MigrationStrategies,
     type RxCollectionCreator,
     type RxDatabase,
     type RxReplicationPullStreamItem,
     type RxStorage
 } from "rxdb"
 import { RxDBLeaderElectionPlugin } from "rxdb/plugins/leader-election"
+import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema"
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder"
 import { replicateRxCollection } from "rxdb/plugins/replication"
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
@@ -18,6 +20,7 @@ import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { type Observable, Subject } from "rxjs"
 import { rxdbCollectionOptions } from "../rxdb-db-collection/rxdb"
 
+addRxPlugin(RxDBMigrationSchemaPlugin)
 addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
 
@@ -116,10 +119,10 @@ async function createDatabase({
     name,
     schema,
     devMode,
-    storage
+    storage,
+    version,
+    migrateDocument
 }: LofiConfig): Promise<RxDatabase> {
-    const version = 0
-
     if (devMode) {
         await import("rxdb/plugins/dev-mode").then((module) =>
             addRxPlugin(module.RxDBDevModePlugin)
@@ -147,7 +150,7 @@ async function createDatabase({
         collections[tableName] = {
             schema: {
                 title: tableName,
-                version,
+                version: version ?? 0,
                 type: "object",
                 primaryKey: "id",
                 properties: {
@@ -157,6 +160,20 @@ async function createDatabase({
                 required: ["id"]
             }
         }
+
+        const migrationStrategies: MigrationStrategies = {}
+
+        for (let i = 0; i < (version ?? 0); i++) {
+            migrationStrategies[i + 1] = (oldDoc, collection) => {
+                if (migrateDocument) {
+                    return migrateDocument(tableName, i + 1, oldDoc, collection)
+                }
+
+                return oldDoc
+            }
+        }
+
+        collections[tableName].migrationStrategies = migrationStrategies
 
         const columns = Object.keys(schemaTable) as (
             | keyof typeof schemaTable
