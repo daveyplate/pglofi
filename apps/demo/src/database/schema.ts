@@ -100,6 +100,53 @@ export const todos = pgTable(
 
 export type Todo = InferSelectModel<typeof todos>
 
+export const chats = pgTable(
+    "chats",
+    {
+        id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true })
+            .defaultNow()
+            .$onUpdate(() => new Date())
+            .notNull()
+    },
+    () => [
+        crudPolicy({
+            role: authenticatedRole,
+            read: true,
+            modify: false
+        })
+    ]
+)
+
+export type Chat = InferSelectModel<typeof chats>
+
+export const messages = pgTable(
+    "messages",
+    {
+        id: uuid().primaryKey().default(sql`uuid_generate_v7()`),
+        userId: uuid()
+            .notNull()
+            .references(() => profiles.id, { onDelete: "cascade" }),
+        chatId: uuid().references(() => chats.id, { onDelete: "cascade" }),
+        content: text().notNull(),
+        createdAt: timestamp({ withTimezone: true }).defaultNow().notNull(),
+        updatedAt: timestamp({ withTimezone: true })
+            .defaultNow()
+            .$onUpdate(() => new Date())
+            .notNull()
+    },
+    (table) => [
+        crudPolicy({
+            role: authenticatedRole,
+            read: true,
+            modify: authUuid(table.userId)
+        })
+    ]
+)
+
+export type Message = InferSelectModel<typeof messages>
+
 export const nodes = pgTable("nodes", {
     id: text().primaryKey(),
     expiry: timestamp({ withTimezone: false }).notNull()
