@@ -97,8 +97,16 @@ export async function initializeDb(config: LofiConfig) {
     // Check if config has changed
     if (
         !lofiConfig ||
-        JSON.stringify({ ...lofiConfig, schema: undefined }) !==
-            JSON.stringify({ ...config, schema: undefined }) ||
+        JSON.stringify({
+            ...lofiConfig,
+            schema: undefined,
+            migrationStrategy: undefined
+        }) !==
+            JSON.stringify({
+                ...config,
+                schema: undefined,
+                migrationStrategy: undefined
+            }) ||
         lofiConfig.schema !== config.schema
     ) {
         await destroyDatabase()
@@ -164,17 +172,17 @@ async function createDatabase({
         const migrationStrategies: MigrationStrategies = {}
 
         for (let i = 0; i < (version ?? 0); i++) {
-            migrationStrategies[i + 1] = (oldDoc, collection) => {
+            migrationStrategies[i + 1] = (oldDocumentData, collection) => {
                 if (migrationStrategy) {
                     return migrationStrategy(
                         tableName,
                         i + 1,
-                        oldDoc,
+                        oldDocumentData,
                         collection
                     )
                 }
 
-                return oldDoc
+                return oldDocumentData
             }
         }
 
