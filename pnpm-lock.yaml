@@ -22,10 +22,10 @@ importers:
         version: 0.0.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typedoc@0.25.13(typescript@5.9.3))
       '@daveyplate/better-auth-tanstack':
         specifier: ^1.3.6
-        version: 1.3.6(@tanstack/query-core@5.90.2)(@tanstack/react-query@5.90.2(react@19.2.0))(better-auth@1.3.26(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.3.6(@tanstack/query-core@5.90.2)(@tanstack/react-query@5.90.2(react@19.2.0))(better-auth@1.3.27(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@daveyplate/better-auth-ui':
         specifier: ^3.2.5
-        version: 3.2.5(fbf978fc73345e0e877d1495361a9f1a)
+        version: 3.2.5(b6280dc6e6b11de877740c9e677f60e6)
       '@daveyplate/pglofi':
         specifier: workspace:*
         version: link:../../packages/pglofi
@@ -34,19 +34,19 @@ importers:
         version: 1.0.2
       '@radix-ui/react-checkbox':
         specifier: ^1.3.3
-        version: 1.3.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.3.3(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.16
-        version: 2.1.16(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 2.1.16(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-separator':
         specifier: ^1.1.7
-        version: 1.1.7(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.1.7(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@radix-ui/react-slot':
         specifier: ^1.2.3
-        version: 1.2.3(@types/react@19.2.0)(react@19.2.0)
+        version: 1.2.3(@types/react@19.2.2)(react@19.2.0)
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
-        version: 1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.2.8(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@standard-schema/spec':
         specifier: ^1.0.0
         version: 1.0.0
@@ -54,20 +54,20 @@ importers:
         specifier: ^2.74.0
         version: 2.74.0
       '@tanstack/db':
-        specifier: ^0.4.4
-        version: 0.4.4(typescript@5.9.3)
+        specifier: ^0.4.6
+        version: 0.4.6(typescript@5.9.3)
       '@tanstack/query-db-collection':
-        specifier: ^0.2.25
-        version: 0.2.25(@tanstack/query-core@5.90.2)(typescript@5.9.3)
+        specifier: ^0.2.27
+        version: 0.2.27(@tanstack/query-core@5.90.2)(typescript@5.9.3)
       '@tanstack/react-db':
-        specifier: ^0.1.26
-        version: 0.1.26(react@19.2.0)(typescript@5.9.3)
+        specifier: ^0.1.28
+        version: 0.1.28(react@19.2.0)(typescript@5.9.3)
       '@tanstack/react-query':
         specifier: ^5.90.2
         version: 5.90.2(react@19.2.0)
       '@tanstack/rxdb-db-collection':
-        specifier: ^0.1.15
-        version: 0.1.15(rxdb@16.19.1(rxjs@7.8.2))(typescript@5.9.3)
+        specifier: ^0.1.17
+        version: 0.1.17(rxdb@16.19.1(rxjs@7.8.2))(typescript@5.9.3)
       '@uidotdev/usehooks':
         specifier: ^2.4.1
         version: 2.4.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -75,8 +75,8 @@ importers:
         specifier: ^2.14.0
         version: 2.14.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       better-auth:
-        specifier: 1.3.26
-        version: 1.3.26(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        specifier: 1.3.27
+        version: 1.3.27(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -127,8 +127,8 @@ importers:
         version: 4.1.12
     devDependencies:
       '@better-auth/cli':
-        specifier: ^1.3.26
-        version: 1.3.26(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(@types/react@19.2.0)(kysely@0.28.7)(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(pg@8.16.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        specifier: ^1.3.27
+        version: 1.3.27(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(@types/react@19.2.2)(kysely@0.28.7)(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(pg@8.16.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@biomejs/biome':
         specifier: 2.2.5
         version: 2.2.5
@@ -145,11 +145,11 @@ importers:
         specifier: ^8.15.5
         version: 8.15.5
       '@types/react':
-        specifier: ^19.2.0
-        version: 19.2.0
+        specifier: ^19.2.2
+        version: 19.2.2
       '@types/react-dom':
-        specifier: ^19.2.0
-        version: 19.2.0(@types/react@19.2.0)
+        specifier: ^19.2.1
+        version: 19.2.1(@types/react@19.2.2)
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3
@@ -348,7 +348,7 @@ importers:
         version: 2.14.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       better-auth:
         specifier: 1.3.27
-        version: 1.3.27(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.3.27(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -400,7 +400,7 @@ importers:
     devDependencies:
       '@better-auth/cli':
         specifier: ^1.3.27
-        version: 1.3.27(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(@types/react@19.2.2)(kysely@0.28.7)(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(pg@8.16.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+        version: 1.3.27(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(@types/react@19.2.2)(kysely@0.28.7)(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(pg@8.16.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@biomejs/biome':
         specifier: 2.2.5
         version: 2.2.5
@@ -2300,11 +2300,6 @@ packages:
     peerDependencies:
       typescript: '>=4.7'
 
-  '@tanstack/db@0.4.4':
-    resolution: {integrity: sha512-G+abJtW6jBjAwMSgbaSYuwUJFUaxTY7kb+PyT3Y6r2pr795v+QQNHe6pniQeqrLp3M5nnx3rws+XfeqoDgN/VQ==}
-    peerDependencies:
-      typescript: '>=4.7'
-
   '@tanstack/db@0.4.6':
     resolution: {integrity: sha512-2KSa9PGQoxCvsivKfItDvS7QVcz6sBZ+8wWcgo0MUOjn8v79dLePaHXgZjhrNdQHmjyqe6w6Iw3ihGzwdCfwuA==}
     peerDependencies:
@@ -2313,22 +2308,11 @@ packages:
   '@tanstack/query-core@5.90.2':
     resolution: {integrity: sha512-k/TcR3YalnzibscALLwxeiLUub6jN5EDLwKDiO7q5f4ICEoptJ+n9+7vcEFy5/x/i6Q+Lb/tXrsKCggf5uQJXQ==}
 
-  '@tanstack/query-db-collection@0.2.25':
-    resolution: {integrity: sha512-Io07hIX7VLg7cO2/+Y6c9Bf2Y8xWtxt31i2lLswW2lx0sTZvK6sIpLvld8SxbMeRJHrwtXra++V0O6a1Y2ALGA==}
-    peerDependencies:
-      '@tanstack/query-core': ^5.0.0
-      typescript: '>=4.7'
-
   '@tanstack/query-db-collection@0.2.27':
     resolution: {integrity: sha512-ea09dDy2Q+4kwXVIUW2ZZcTLOU1Hh4iRsjsp7JtM0hZC/QXEzdvdLS4gODW2QuwTT6mB9q5bO+9FrzTeoXYrjQ==}
     peerDependencies:
       '@tanstack/query-core': ^5.0.0
       typescript: '>=4.7'
-
-  '@tanstack/react-db@0.1.26':
-    resolution: {integrity: sha512-8itSp4bd+PU7/yImMn3eAcMq2AEzDVuPhJ2K5Pyqh7f9qhXlMDdxcm1K9BpZpaQJOJEcLYls6FDnaNNkyc5/hQ==}
-    peerDependencies:
-      react: '>=16.8.0'
 
   '@tanstack/react-db@0.1.28':
     resolution: {integrity: sha512-XIJKx/YQkoiuuSD0xV8tu5+dN3FxtyDOt3vppNYYwejnTxxnVtZ1tFHNtgTpdLVPaE2uZcuysOuXmia1e4iMOw==}
@@ -2339,12 +2323,6 @@ packages:
     resolution: {integrity: sha512-CLABiR+h5PYfOWr/z+vWFt5VsOA2ekQeRQBFSKlcoW6Ndx/f8rfyVmq4LbgOM4GG2qtxAxjLYLOpCNTYm4uKzw==}
     peerDependencies:
       react: ^18 || ^19
-
-  '@tanstack/rxdb-db-collection@0.1.15':
-    resolution: {integrity: sha512-SNqiSmCaIZYA+svpocAEkVFTOP2sOEa5+b1FzLjf/NIOEANUH/xj4+HiyMojZwMKlRzSHpc/3AKRjJizenTilQ==}
-    peerDependencies:
-      rxdb: '>=16.17.2'
-      typescript: '>=4.7'
 
   '@tanstack/rxdb-db-collection@0.1.17':
     resolution: {integrity: sha512-cMX2W8yRM34gOeKBy/FPIGmX5KtI3V2AasakxAvthv7A/2qTWwWo6cyMCApLzUcaGZIstGiBmaf16GI8f7KFqw==}
@@ -4772,7 +4750,7 @@ snapshots:
       - svelte
       - vue
 
-  '@better-auth/cli@1.3.27(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(@types/react@19.2.2)(kysely@0.28.7)(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(pg@8.16.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
+  '@better-auth/cli@1.3.27(@neondatabase/serverless@1.0.2)(@types/pg@8.15.5)(@types/react@19.2.2)(kysely@0.28.7)(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(pg@8.16.3)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@babel/core': 7.28.4
       '@babel/preset-react': 7.27.1(@babel/core@7.28.4)
@@ -4783,7 +4761,7 @@ snapshots:
       '@prisma/client': 5.22.0(prisma@5.22.0)
       '@types/better-sqlite3': 7.6.13
       '@types/prompts': 2.4.9
-      better-auth: 1.3.27(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      better-auth: 1.3.27(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       better-sqlite3: 12.4.1
       c12: 3.3.0
       chalk: 5.6.2
@@ -4922,7 +4900,7 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.90.2
       '@tanstack/react-query': 5.90.2(react@19.2.0)
-      better-auth: 1.3.27(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      better-auth: 1.3.27(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
@@ -4953,7 +4931,7 @@ snapshots:
       '@triplit/client': 1.0.50(better-sqlite3@12.4.1)(typescript@5.9.3)
       '@triplit/react': 1.0.51(better-sqlite3@12.4.1)(react@19.2.0)(typescript@5.9.3)
       '@wojtekmaj/react-recaptcha-v3': 0.1.4(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      better-auth: 1.3.27(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      better-auth: 1.3.27(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       input-otp: 1.4.2(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -6475,26 +6453,6 @@ snapshots:
       '@types/react': 19.2.2
       '@types/react-dom': 19.2.1(@types/react@19.2.2)
 
-  '@radix-ui/react-tooltip@1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
-    dependencies:
-      '@radix-ui/primitive': 1.1.3
-      '@radix-ui/react-compose-refs': 1.1.2(@types/react@19.2.0)(react@19.2.0)
-      '@radix-ui/react-context': 1.1.2(@types/react@19.2.0)(react@19.2.0)
-      '@radix-ui/react-dismissable-layer': 1.1.11(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@radix-ui/react-id': 1.1.1(@types/react@19.2.0)(react@19.2.0)
-      '@radix-ui/react-popper': 1.2.8(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@radix-ui/react-portal': 1.1.9(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@radix-ui/react-presence': 1.1.5(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@radix-ui/react-primitive': 2.1.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@radix-ui/react-slot': 1.2.3(@types/react@19.2.0)(react@19.2.0)
-      '@radix-ui/react-use-controllable-state': 1.2.2(@types/react@19.2.0)(react@19.2.0)
-      '@radix-ui/react-visually-hidden': 1.2.3(@types/react-dom@19.2.0(@types/react@19.2.0))(@types/react@19.2.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      react: 19.2.0
-      react-dom: 19.2.0(react@19.2.0)
-    optionalDependencies:
-      '@types/react': 19.2.0
-      '@types/react-dom': 19.2.0(@types/react@19.2.0)
-
   '@radix-ui/react-tooltip@1.2.8(@types/react-dom@19.2.1(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
       '@radix-ui/primitive': 1.1.3
@@ -6887,12 +6845,6 @@ snapshots:
       sorted-btree: 1.8.1
       typescript: 5.9.3
 
-  '@tanstack/db@0.4.4(typescript@5.9.3)':
-    dependencies:
-      '@standard-schema/spec': 1.0.0
-      '@tanstack/db-ivm': 0.1.9(typescript@5.9.3)
-      typescript: 5.9.3
-
   '@tanstack/db@0.4.6(typescript@5.9.3)':
     dependencies:
       '@standard-schema/spec': 1.0.0
@@ -6901,27 +6853,12 @@ snapshots:
 
   '@tanstack/query-core@5.90.2': {}
 
-  '@tanstack/query-db-collection@0.2.25(@tanstack/query-core@5.90.2)(typescript@5.9.3)':
-    dependencies:
-      '@standard-schema/spec': 1.0.0
-      '@tanstack/db': 0.4.4(typescript@5.9.3)
-      '@tanstack/query-core': 5.90.2
-      typescript: 5.9.3
-
   '@tanstack/query-db-collection@0.2.27(@tanstack/query-core@5.90.2)(typescript@5.9.3)':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@tanstack/db': 0.4.6(typescript@5.9.3)
       '@tanstack/query-core': 5.90.2
       typescript: 5.9.3
-
-  '@tanstack/react-db@0.1.26(react@19.2.0)(typescript@5.9.3)':
-    dependencies:
-      '@tanstack/db': 0.4.4(typescript@5.9.3)
-      react: 19.2.0
-      use-sync-external-store: 1.6.0(react@19.2.0)
-    transitivePeerDependencies:
-      - typescript
 
   '@tanstack/react-db@0.1.28(react@19.2.0)(typescript@5.9.3)':
     dependencies:
@@ -6935,17 +6872,6 @@ snapshots:
     dependencies:
       '@tanstack/query-core': 5.90.2
       react: 19.2.0
-
-  '@tanstack/rxdb-db-collection@0.1.15(rxdb@16.19.1(rxjs@7.8.2))(typescript@5.9.3)':
-    dependencies:
-      '@standard-schema/spec': 1.0.0
-      '@tanstack/db': 0.4.4(typescript@5.9.3)
-      '@tanstack/store': 0.7.7
-      debug: 4.4.3
-      rxdb: 16.19.1(rxjs@7.8.2)
-      typescript: 5.9.3
-    transitivePeerDependencies:
-      - supports-color
 
   '@tanstack/rxdb-db-collection@0.1.17(rxdb@16.19.1(rxjs@7.8.2))(typescript@5.9.3)':
     dependencies:
@@ -7237,7 +7163,7 @@ snapshots:
       react: 19.2.0
       react-dom: 19.2.0(react@19.2.0)
 
-  better-auth@1.3.27(next@15.5.4(@babel/core@7.28.4)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
+  better-auth@1.3.27(next@15.5.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
       '@better-auth/core': 1.3.27
       '@better-auth/utils': 0.3.0
