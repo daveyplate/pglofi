@@ -10,10 +10,10 @@ export type LofiConfig = {
     sync?: "ably" | false | undefined | null
     ablyToken?: string
     version?: number
-    migrateDocument?: (
+    migrationStrategy?: (
         tableName: string,
         version: number,
-        oldDoc: Record<string, unknown>,
+        oldDocumentData: Record<string, unknown>,
         collection: RxCollection
     ) => unknown
 }

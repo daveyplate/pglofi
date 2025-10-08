@@ -121,7 +121,7 @@ async function createDatabase({
     devMode,
     storage,
     version,
-    migrateDocument
+    migrationStrategy
 }: LofiConfig): Promise<RxDatabase> {
     if (devMode) {
         await import("rxdb/plugins/dev-mode").then((module) =>
@@ -165,8 +165,13 @@ async function createDatabase({
 
         for (let i = 0; i < (version ?? 0); i++) {
             migrationStrategies[i + 1] = (oldDoc, collection) => {
-                if (migrateDocument) {
-                    return migrateDocument(tableName, i + 1, oldDoc, collection)
+                if (migrationStrategy) {
+                    return migrationStrategy(
+                        tableName,
+                        i + 1,
+                        oldDoc,
+                        collection
+                    )
                 }
 
                 return oldDoc

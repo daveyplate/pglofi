@@ -25,8 +25,13 @@ export function Providers({ children }: { children: ReactNode }) {
         enabled: !!sessionData,
         sync: "ably",
         version: 0,
-        migrateDocument: async (tableName, version, oldDoc, collection) => {
-            return oldDoc
+        migrationStrategy: async (
+            tableName,
+            version,
+            oldDocumentData,
+            collection
+        ) => {
+            return oldDocumentData
         }
     })
 
