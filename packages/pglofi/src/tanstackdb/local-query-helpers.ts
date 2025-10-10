@@ -241,10 +241,13 @@ export function buildJoinCondition(
  * Applies sort, limit, and skip to a TanStack DB query.
  * Defaults to sorting by 'createdAt asc' if no explicit sort is provided.
  */
-export function applySortLimitSkip<TSchema extends Record<string, AnyPgTable>>(
+export function applySortLimitSkip<
+    TSchema extends Record<string, AnyPgTable>,
+    TTable extends AnyPgTable = AnyPgTable
+>(
     q: unknown,
     parentAlias: string,
-    query?: QueryConfig<TSchema, AnyPgTable>
+    query?: QueryConfig<TSchema, TTable>
 ): unknown {
     let currentQuery = q
 
@@ -297,13 +300,16 @@ export function applySortLimitSkip<TSchema extends Record<string, AnyPgTable>>(
  * Note: sort/limit/skip for joins are applied post-processing in flatToHierarchical
  * because TanStack DB doesn't support them at query time for relations.
  */
-export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
+export function buildLocalQuery<
+    TSchema extends Record<string, AnyPgTable>,
+    TTable extends AnyPgTable = AnyPgTable
+>(
     schema: TSchema,
     q: unknown,
     parentTableName: keyof TSchema,
     parentTableKey: keyof TSchema,
     parentAlias: string,
-    query?: QueryConfig<TSchema, AnyPgTable>,
+    query?: QueryConfig<TSchema, TTable>,
     isRoot = true
 ) {
     let currentQuery = q
@@ -382,13 +388,16 @@ export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
  * Converts flat join results to hierarchical format.
  * Groups related data by parent ID and applies limits/skips to one-to-many relations.
  */
-export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
+export function flatToHierarchical<
+    TSchema extends Record<string, AnyPgTable>,
+    TTable extends AnyPgTable = AnyPgTable
+>(
     schema: TSchema,
     flatResults: TableRecord[],
     parentTableName: string,
     parentTableKey: keyof TSchema,
     parentAlias: string,
-    query?: QueryConfig<TSchema, AnyPgTable>
+    query?: QueryConfig<TSchema, TTable>
 ) {
     // If no includes, data is not aliased - return as-is
     if (!query?.include || flatResults.length === 0) {

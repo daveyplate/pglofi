@@ -1,4 +1,5 @@
 import type { StandardSchemaV1 } from "@standard-schema/spec"
+
 import type {
     BaseCollectionConfig,
     CollectionConfig,
@@ -100,7 +101,7 @@ export function rxdbCollectionOptions<T extends object>(
     schema?: never // no schema in the result
 }
 
-// biome-ignore lint/suspicious/noExplicitAny: Any RxDbCollectionConfig is valid
+// biome-ignore lint/suspicious/noExplicitAny: Return type must match TanStack DB's CollectionConfig
 export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
     type Row = Record<string, unknown>
     type Key = string // because RxDB primary keys must be strings
@@ -110,8 +111,8 @@ export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
 
     // "getKey"
     const primaryPath = rxCollection.schema.primaryPath
-    function getKey(item: Record<string, unknown>) {
-        const key = item[primaryPath] as string
+    function getKey(item: Record<string, unknown>): string {
+        const key: string = item[primaryPath] as string
         return key
     }
 
@@ -152,7 +153,8 @@ export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
                                             $gt: getKey(cursor)
                                         }
                                     }
-                                ]
+                                ],
+                                _deleted: false
                             },
                             sort: [
                                 { "_meta.lwt": `asc` },
@@ -163,7 +165,7 @@ export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
                         }
                     } else {
                         query = {
-                            selector: {},
+                            selector: { _deleted: false },
                             sort: [
                                 { "_meta.lwt": `asc` },
                                 { [primaryPath]: `asc` }
@@ -183,10 +185,9 @@ export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
                         rxCollection.storageInstance.schema,
                         query
                     )
-
-                    const docs = await rxCollection
-                        .find(preparedQuery.query)
-                        .exec()
+                    const result =
+                        await rxCollection.storageInstance.query(preparedQuery)
+                    const docs = result.documents
 
                     cursor = lastOfArray(docs)
                     if (docs.length === 0) {
@@ -197,7 +198,7 @@ export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
                     docs.forEach((d) => {
                         write({
                             type: `insert`,
-                            value: stripRxdbFields(clone(d.toJSON()))
+                            value: stripRxdbFields(clone(d))
                         })
                     })
                 }
@@ -276,7 +277,7 @@ export function rxdbCollectionOptions(config: RxDBCollectionConfig<any, any>) {
 
     const collectionConfig: CollectionConfig<Row, string> = {
         ...restConfig,
-        getKey: getKey,
+        getKey,
         sync,
         onInsert: async (params) => {
             debug(`insert`, params)

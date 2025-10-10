@@ -25,7 +25,7 @@ interface UseStaleEntitiesParams<
 export function useStaleEntities<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
-    TQuery extends QueryConfig<TSchema, AnyPgTable>
+    TQuery extends QueryConfig<TSchema, TSchema[TTableKey]>
 >({
     schema,
     data,
