@@ -17,12 +17,12 @@ export default function TodosPage() {
     const throttledQ = useThrottle(q, 300)
 
     const { data: todos, isLoading } = lofi.useQuery(sessionData && "todos", {
-        sort: [{ createdAt: "desc" }],
         include: { user: "profiles" },
         selector: {
             task: { $ilike: `%${throttledQ}%` },
             userId: sessionData?.user.id
-        }
+        },
+        sort: [{ createdAt: "desc" }]
     })
 
     // const { data: users } = lofi.useQuery(sessionData && "profiles", {
