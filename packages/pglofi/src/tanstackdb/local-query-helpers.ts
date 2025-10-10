@@ -186,28 +186,50 @@ function buildSelectorExpression(
 
 /**
  * Applies sorting to an array of records based on sort configuration.
- * Handles multiple sort keys and null/undefined values.
+ * Handles multiple sort keys, null/undefined values, and string sorting strategies.
  */
 function applySortToArray<T extends TableRecord>(
     records: T[],
-    sortConfig: SortConfig<AnyPgTable>
+    sortConfig: SortConfig<AnyPgTable>,
+    table?: AnyPgTable
 ): T[] {
-    const orders = normalizeSortConfig(sortConfig)
+    const orders = normalizeSortConfig(sortConfig, table)
     const sorted = [...records]
 
     sorted.sort((a, b) => {
-        for (const { column, ascending } of orders) {
+        for (const { column, ascending, stringSort } of orders) {
             const aVal = a[column]
             const bVal = b[column]
 
             if (aVal === bVal) continue
 
-            // Nulls sort last
+            // Nulls sort last (Postgres default)
             if (aVal === null || aVal === undefined) return 1
             if (bVal === null || bVal === undefined) return -1
 
-            const comparison = aVal < bVal ? -1 : 1
-            return ascending ? comparison : -comparison
+            let comparison = 0
+
+            // Handle string sorting with strategy
+            if (
+                typeof aVal === "string" &&
+                typeof bVal === "string" &&
+                stringSort
+            ) {
+                if (stringSort === "locale") {
+                    // Locale-aware (case-insensitive) comparison for citext
+                    comparison = aVal.localeCompare(bVal)
+                } else {
+                    // Lexical (case-sensitive) comparison for text
+                    comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+                }
+            } else {
+                // Non-string comparison (numbers, dates, etc.)
+                comparison = aVal < bVal ? -1 : 1
+            }
+
+            if (comparison !== 0) {
+                return ascending ? comparison : -comparison
+            }
         }
         return 0
     })
@@ -247,6 +269,7 @@ export function applySortLimitSkip<
 >(
     q: unknown,
     parentAlias: string,
+    parentTable?: AnyPgTable,
     query?: QueryConfig<TSchema, TTable>
 ): unknown {
     let currentQuery = q
@@ -255,16 +278,22 @@ export function applySortLimitSkip<
 
     // Always apply sort, defaulting to 'createdAt asc' if no explicit sort is provided
     const orders = hasExplicitSort
-        ? normalizeSortConfig(query.sort!)
+        ? normalizeSortConfig(query.sort!, parentTable)
         : [{ column: "createdAt", ascending: true }]
 
-    for (const { column, ascending } of orders) {
+    for (const { column, ascending, stringSort } of orders) {
         currentQuery = (
             currentQuery as {
                 orderBy: (
                     // biome-ignore lint/suspicious/noExplicitAny: TanStack DB orderBy selector type with joins
                     selector: any,
-                    direction?: "asc" | "desc"
+                    direction?:
+                        | "asc"
+                        | "desc"
+                        | {
+                              direction?: "asc" | "desc"
+                              stringSort?: "lexical" | "locale"
+                          }
                 ) => unknown
             }
         ).orderBy(
@@ -272,7 +301,14 @@ export function applySortLimitSkip<
                 const tables = row as Record<string, TableRecord>
                 return (tables[parentAlias] as TableRecord)[column]
             },
-            ascending ? "asc" : "desc"
+            stringSort
+                ? {
+                      direction: ascending ? "asc" : "desc",
+                      stringSort
+                  }
+                : ascending
+                  ? "asc"
+                  : "desc"
         )
     }
 
@@ -327,7 +363,13 @@ export function buildLocalQuery<
 
     // Apply sort/limit/skip (only for root - joins handle this in post-processing)
     if (isRoot) {
-        currentQuery = applySortLimitSkip(currentQuery, parentAlias, query)
+        const parentTable = schema[parentTableKey]
+        currentQuery = applySortLimitSkip(
+            currentQuery,
+            parentAlias,
+            parentTable,
+            query
+        )
     }
 
     // Build joins recursively
@@ -566,7 +608,12 @@ export function flatToHierarchical<
                 const sortToApply = hasExplicitSort
                     ? config.sort!
                     : ["createdAt"]
-                relationArray = applySortToArray(relationArray, sortToApply)
+                const relatedTable = schema[config.from as keyof TSchema]
+                relationArray = applySortToArray(
+                    relationArray,
+                    sortToApply,
+                    relatedTable
+                )
 
                 // Apply skip and limit
                 const startIndex = config.skip || 0
