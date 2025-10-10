@@ -80,13 +80,13 @@ export function useStaleEntities<
                 )) {
                     const config =
                         typeof relationConfig === "string"
-                            ? { table: relationConfig }
+                            ? { from: relationConfig }
                             : (relationConfig as {
-                                  table: keyof TSchema
+                                  from: keyof TSchema
                                   include?: unknown
                               })
 
-                    const relatedTableName = getTableName(schema[config.table])
+                    const relatedTableName = getTableName(schema[config.from])
 
                     // Collect nested entities
                     const nestedEntities: Array<Record<string, unknown>> = []

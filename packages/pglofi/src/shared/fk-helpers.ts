@@ -94,11 +94,14 @@ export function resolveForeignKey(
     currentTableName: string,
     relatedTable: AnyPgTable,
     relatedTableName: string,
-    on?: string | Partial<Record<string, string>>,
-    many?: boolean
+    options?: {
+        localField?: string
+        foreignField?: string
+        many?: boolean
+    }
 ): FKInfo {
-    // Auto-detect if no 'on' parameter
-    if (on === undefined) {
+    // Auto-detect if no explicit fields provided
+    if (!options?.localField && !options?.foreignField) {
         // Try many-to-one: FK on current table
         const manyToOne = findForeignKey(currentTable, relatedTableName)
         if (manyToOne) {
@@ -125,44 +128,53 @@ export function resolveForeignKey(
         )
     }
 
-    // Parse 'on' parameter
-    const { currentColumn, relatedColumn: parsedRelatedColumn } =
-        parseOnParameter(on)
-
-    // Convert TypeScript property names to SQL column names
-    const currentSqlColumn = tsToSqlColumn(currentTable, currentColumn)
-    const parsedRelatedSqlColumn = parsedRelatedColumn
-        ? tsToSqlColumn(relatedTable, parsedRelatedColumn)
+    // Convert TypeScript property names to SQL column names if provided
+    const currentSqlColumn = options.localField
+        ? tsToSqlColumn(currentTable, options.localField)
+        : undefined
+    const foreignSqlColumn = options.foreignField
+        ? tsToSqlColumn(relatedTable, options.foreignField)
         : undefined
 
-    // Handle shorthand: infer related column if not provided
-    const relatedSqlColumn =
-        parsedRelatedSqlColumn ??
-        (many
+    // Handle partial specification: infer missing column
+    const localColumn =
+        currentSqlColumn ??
+        (options.many
             ? findForeignKeyOrThrow(
                   relatedTable,
                   relatedTableName,
                   currentTableName,
-                  { foreignColumn: currentSqlColumn }
+                  { foreignColumn: foreignSqlColumn }
+              ).foreignColumn
+            : "id") // Shorthand assumes 'id' on current table
+
+    const foreignColumn =
+        foreignSqlColumn ??
+        (options.many
+            ? findForeignKeyOrThrow(
+                  relatedTable,
+                  relatedTableName,
+                  currentTableName,
+                  { foreignColumn: localColumn }
               ).localColumn
-            : "id") // Shorthand assumes 'id' on related table
+            : "id") // Shorthand assumes 'id' on foreign table
 
     // Validate and return FK info based on relationship direction (using SQL column names)
-    if (many) {
+    if (options.many) {
         // One-to-many: FK must be on related table
         findForeignKeyOrThrow(
             relatedTable,
             relatedTableName,
             currentTableName,
             {
-                localColumn: relatedSqlColumn,
-                foreignColumn: currentSqlColumn
+                localColumn: foreignColumn,
+                foreignColumn: localColumn
             }
         )
 
         return {
-            localColumn: relatedSqlColumn,
-            foreignColumn: currentSqlColumn,
+            localColumn: foreignColumn,
+            foreignColumn: localColumn,
             foreignTable: relatedTableName,
             isOneToMany: true
         }
@@ -170,14 +182,14 @@ export function resolveForeignKey(
 
     // Many-to-one: try FK on current table first
     const fk = findForeignKey(currentTable, relatedTableName, {
-        localColumn: currentSqlColumn,
-        foreignColumn: relatedSqlColumn
+        localColumn: localColumn,
+        foreignColumn: foreignColumn
     })
 
     if (fk) {
         return {
-            localColumn: currentSqlColumn,
-            foreignColumn: relatedSqlColumn,
+            localColumn: localColumn,
+            foreignColumn: foreignColumn,
             foreignTable: relatedTableName,
             isOneToMany: false
         }
@@ -185,21 +197,21 @@ export function resolveForeignKey(
 
     // Fallback: try one-to-many pattern
     const reverseFk = findForeignKey(relatedTable, currentTableName, {
-        localColumn: relatedSqlColumn,
-        foreignColumn: currentSqlColumn
+        localColumn: foreignColumn,
+        foreignColumn: localColumn
     })
 
     if (reverseFk) {
         return {
-            localColumn: relatedSqlColumn,
-            foreignColumn: currentSqlColumn,
+            localColumn: foreignColumn,
+            foreignColumn: localColumn,
             foreignTable: relatedTableName,
             isOneToMany: true
         }
     }
 
     throw new Error(
-        `No foreign key found between "${currentTableName}.${currentColumn}" and "${relatedTableName}.${parsedRelatedColumn || "id"}"`
+        `No foreign key found between "${currentTableName}.${options.localField || localColumn}" and "${relatedTableName}.${options.foreignField || foreignColumn}"`
     )
 }
 
@@ -208,20 +220,24 @@ export function getFKInfo<TSchema extends Record<string, AnyPgTable>>(
     schema: TSchema,
     currentTableKey: keyof TSchema,
     relationConfig: {
-        table: string
+        from: string
         many?: boolean
-        on?: string | Partial<Record<string, string>>
+        localField?: string
+        foreignField?: string
     }
 ): FKInfo {
     const currentTable = schema[currentTableKey]
-    const relatedTable = schema[relationConfig.table]
+    const relatedTable = schema[relationConfig.from]
 
     return resolveForeignKey(
         currentTable,
         getTableName(currentTable),
         relatedTable,
         getTableName(relatedTable),
-        relationConfig.on,
-        relationConfig.many
+        {
+            localField: relationConfig.localField,
+            foreignField: relationConfig.foreignField,
+            many: relationConfig.many
+        }
     )
 }

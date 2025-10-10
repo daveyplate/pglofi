@@ -1,37 +1,34 @@
 import type { InferSelectModel } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import type { WhereConfig } from "./lofi-where-types"
+import type { SelectorConfig } from "./lofi-selector-types"
 
 // Helper type to get column names from a table
 type ColumnNames<TTable extends AnyPgTable> = keyof TTable["_"]["columns"] &
     string
 
-type ColumnMapping<
-    TCurrentTable extends AnyPgTable,
-    TRelatedTable extends AnyPgTable
-> =
-    | ColumnNames<TCurrentTable> // Shorthand: "userId" or "id"
-    | Partial<Record<ColumnNames<TCurrentTable>, ColumnNames<TRelatedTable>>>
+// Sort configuration (Mango Query format)
+// Can be:
+// - Array of column names (defaults to "asc"): ["createdAt", "name"]
+// - Array of objects with column and direction: [{ createdAt: "desc" }, { name: "asc" }]
+export type SortConfig<TTable extends AnyPgTable> =
+    | ColumnNames<TTable>[]
+    | Partial<Record<ColumnNames<TTable>, "asc" | "desc">>[]
 
-// Order configuration - can be a column name (defaults to asc) or an object with column names as keys
-export type OrderByConfig<TTable extends AnyPgTable> =
-    | ColumnNames<TTable>
-    | Partial<Record<ColumnNames<TTable>, "asc" | "desc">>
-    | OrderByConfig<TTable>[]
-
+// Relation configuration (MongoDB $lookup style)
 type RelationConfig<
     TSchema extends Record<string, AnyPgTable>,
     TCurrentTable extends AnyPgTable,
     TRelatedTableName extends keyof TSchema & string
 > = {
-    table: TRelatedTableName
-    many?: boolean
-    on?: ColumnMapping<TCurrentTable, TSchema[TRelatedTableName]>
+    from: TRelatedTableName // The table/collection to join with
+    many?: boolean // Whether this is a one-to-many relationship
+    localField?: ColumnNames<TCurrentTable> // Field from the current table
+    foreignField?: ColumnNames<TSchema[TRelatedTableName]> // Field from the related table
     include?: IncludeConfig<TSchema, TSchema[TRelatedTableName]>
-    where?: WhereConfig<TSchema[TRelatedTableName]>
+    selector?: SelectorConfig<TSchema[TRelatedTableName]>
     limit?: number
-    offset?: number
-    orderBy?: OrderByConfig<TSchema[TRelatedTableName]>
+    skip?: number
+    sort?: SortConfig<TSchema[TRelatedTableName]>
 }
 
 // Helper type to create a discriminated union of all possible RelationConfig types
@@ -58,10 +55,10 @@ export type QueryConfig<
     TCurrentTable extends AnyPgTable = AnyPgTable
 > = {
     include?: IncludeConfig<TSchema, TCurrentTable>
-    where?: WhereConfig<TCurrentTable>
+    selector?: SelectorConfig<TCurrentTable>
     limit?: number
-    offset?: number
-    orderBy?: OrderByConfig<TCurrentTable>
+    skip?: number
+    sort?: SortConfig<TCurrentTable>
 }
 
 // Helper type to infer the result type based on the query configuration

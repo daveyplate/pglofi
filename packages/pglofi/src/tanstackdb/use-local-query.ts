@@ -31,7 +31,7 @@ export function useLocalQuery<
 
         const tableCollection = tableCollections[tableName]
 
-        // Build complete query (where, joins, order/limit/offset) in one pass
+        // Build complete query (selector, joins, sort/limit/skip) in one pass
         const parentAlias = tableName
         const liveQueryCollection = createLiveQueryCollection({
             startSync: true,

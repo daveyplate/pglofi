@@ -14,7 +14,7 @@ function buildIncludeClause<TSchema extends Record<string, AnyPgTable>>(
 ): string {
     const config =
         typeof relationConfig === "string"
-            ? { table: relationConfig }
+            ? { from: relationConfig }
             : relationConfig
     const fkInfo = getFKInfo(schema, parentTableKey, config)
 
@@ -22,7 +22,7 @@ function buildIncludeClause<TSchema extends Record<string, AnyPgTable>>(
     const nestedSelectString = config.include
         ? `*,${Object.entries(config.include)
               .map(([name, nestedConfig]) =>
-                  buildIncludeClause(schema, config.table, name, nestedConfig)
+                  buildIncludeClause(schema, config.from, name, nestedConfig)
               )
               .join(",")}`
         : "*"

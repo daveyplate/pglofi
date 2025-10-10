@@ -12,7 +12,7 @@ export default function TodoList() {
     const [newTask, setNewTask] = useState("")
 
     const { data: todos, isLoading } = lofi.useQuery(sessionData && "todos", {
-        where: {
+        selector: {
             userId: sessionData?.user.id
         }
     })

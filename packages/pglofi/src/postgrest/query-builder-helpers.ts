@@ -4,11 +4,11 @@ import { tsToSqlColumn } from "../shared/column-mapping"
 import {
     getOperatorAndValue,
     isLogicalOperator,
-    normalizeWhereCondition,
-    type WhereConfig
-} from "../shared/lofi-where-types"
+    normalizeSelectorCondition,
+    type SelectorConfig
+} from "../shared/lofi-selector-types"
 
-// Default range limit when only offset is specified
+// Default range limit when only skip is specified
 const DEFAULT_RANGE_LIMIT = 100
 
 /**
@@ -16,7 +16,7 @@ const DEFAULT_RANGE_LIMIT = 100
  * Arrays for 'in' operator need special formatting: (1,2,3)
  */
 function formatValueForNegation(operator: string, value: unknown): unknown {
-    if (operator === "in" && Array.isArray(value)) {
+    if (operator === "$in" && Array.isArray(value)) {
         return `(${value.join(",")})`
     }
     return value
@@ -33,101 +33,89 @@ function applyOperator(
     value: unknown
 ) {
     switch (operator) {
-        case "eq":
+        case "$eq":
             return builder.eq(col, value)
-        case "neq":
+        case "$ne":
             return builder.neq(col, value)
-        case "gt":
+        case "$gt":
             return builder.gt(col, value)
-        case "gte":
+        case "$gte":
             return builder.gte(col, value)
-        case "lt":
+        case "$lt":
             return builder.lt(col, value)
-        case "lte":
+        case "$lte":
             return builder.lte(col, value)
-        case "like":
+        case "$like":
             return builder.like(col, value as string)
-        case "ilike":
+        case "$ilike":
             return builder.ilike(col, value as string)
-        case "in":
+        case "$in":
             return builder.in(col, value as unknown[])
-        case "is":
-            return builder.is(col, value)
+        case "$nin":
+            // $nin is not in array - use .not() with .in()
+            return builder.not(col, "in", `(${(value as unknown[]).join(",")})`)
+        case "$exists":
+            // $exists checks if field is null or not
+            return value === true
+                ? builder.not(col, "is", null)
+                : builder.is(col, null)
         default:
             return builder.eq(col, value)
     }
 }
 
 /**
- * Applies where conditions to a PostgREST query builder recursively.
- * Handles AND/OR logical operators and negations.
+ * Applies selector conditions to a PostgREST query builder recursively.
+ * Handles $and/$or/$not/$nor logical operators.
  * Converts TypeScript column names to SQL column names.
  */
-export function applyWhereConditions(
+export function applySelectorConditions(
     // biome-ignore lint/suspicious/noExplicitAny: Supabase query builder type
     queryBuilder: PostgrestFilterBuilder<any, any, any, any>,
-    whereConfig: WhereConfig<AnyPgTable>,
+    selectorConfig: SelectorConfig<AnyPgTable>,
     prefix = "",
     table?: AnyPgTable
 ) {
     let builder = queryBuilder
 
-    // Handle AND logical operator
+    // Handle $and logical operator
     if (
-        isLogicalOperator(whereConfig) &&
-        "and" in whereConfig &&
-        whereConfig.and
+        isLogicalOperator(selectorConfig) &&
+        "$and" in selectorConfig &&
+        selectorConfig.$and
     ) {
-        for (const subWhere of whereConfig.and) {
-            if (!isLogicalOperator(subWhere)) {
-                for (const [column, condition] of Object.entries(subWhere)) {
-                    const normalized = normalizeWhereCondition(condition)
-                    const { operator, value, isNegated } =
-                        getOperatorAndValue(normalized)
-                    // Convert TS column name to SQL column name
-                    const sqlColumn = table
-                        ? tsToSqlColumn(table, column)
-                        : column
-                    const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
-
-                    if (isNegated) {
-                        const formattedValue = formatValueForNegation(
-                            operator,
-                            value
-                        )
-                        builder = builder.not(col, operator, formattedValue)
-                    } else {
-                        builder = applyOperator(builder, col, operator, value)
-                    }
-                }
-            }
+        for (const subSelector of selectorConfig.$and) {
+            builder = applySelectorConditions(
+                builder,
+                subSelector,
+                prefix,
+                table
+            )
         }
         return builder
     }
 
-    // Handle OR logical operator
+    // Handle $or logical operator
     if (
-        isLogicalOperator(whereConfig) &&
-        "or" in whereConfig &&
-        whereConfig.or
+        isLogicalOperator(selectorConfig) &&
+        "$or" in selectorConfig &&
+        selectorConfig.$or
     ) {
         const conditions: string[] = []
-        for (const subWhere of whereConfig.or) {
-            if (!isLogicalOperator(subWhere)) {
-                for (const [column, condition] of Object.entries(subWhere)) {
-                    const normalized = normalizeWhereCondition(condition)
-                    const { operator, value, isNegated } =
-                        getOperatorAndValue(normalized)
+        for (const subSelector of selectorConfig.$or) {
+            if (!isLogicalOperator(subSelector)) {
+                for (const [column, condition] of Object.entries(subSelector)) {
+                    const normalized = normalizeSelectorCondition(condition)
+                    const { operator, value } = getOperatorAndValue(normalized)
                     // Convert TS column name to SQL column name
                     const sqlColumn = table
                         ? tsToSqlColumn(table, column)
                         : column
                     const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
 
-                    // For OR, build condition strings (negation syntax: not.operator.value)
-                    const condStr = isNegated
-                        ? `not.${col}.${operator}.${value}`
-                        : `${col}.${operator}.${value}`
+                    // Strip $ prefix for PostgREST operators
+                    const pgOperator = operator.replace("$", "")
+                    const condStr = `${col}.${pgOperator}.${value}`
                     conditions.push(condStr)
                 }
             }
@@ -138,53 +126,112 @@ export function applyWhereConditions(
         return builder
     }
 
-    // Handle basic column conditions (default to AND)
-    for (const [column, condition] of Object.entries(whereConfig)) {
-        if (column === "and" || column === "or") continue
+    // Handle $not logical operator (negates a single selector)
+    if (
+        isLogicalOperator(selectorConfig) &&
+        "$not" in selectorConfig &&
+        selectorConfig.$not
+    ) {
+        // For $not, we apply all conditions with .not()
+        const notSelector = selectorConfig.$not
+        if (!isLogicalOperator(notSelector)) {
+            for (const [column, condition] of Object.entries(notSelector)) {
+                const normalized = normalizeSelectorCondition(condition)
+                const { operator, value } = getOperatorAndValue(normalized)
+                // Convert TS column name to SQL column name
+                const sqlColumn = table ? tsToSqlColumn(table, column) : column
+                const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
 
-        const normalized = normalizeWhereCondition(condition)
-        const { operator, value, isNegated } = getOperatorAndValue(normalized)
+                // Strip $ prefix for PostgREST operators
+                const pgOperator = operator.replace("$", "")
+                const formattedValue = formatValueForNegation(operator, value)
+                builder = builder.not(col, pgOperator, formattedValue)
+            }
+        }
+        return builder
+    }
+
+    // Handle $nor logical operator (NOR = NOT (a OR b))
+    if (
+        isLogicalOperator(selectorConfig) &&
+        "$nor" in selectorConfig &&
+        selectorConfig.$nor
+    ) {
+        // $nor is essentially NOT OR, so we negate all OR conditions
+        const conditions: string[] = []
+        for (const subSelector of selectorConfig.$nor) {
+            if (!isLogicalOperator(subSelector)) {
+                for (const [column, condition] of Object.entries(subSelector)) {
+                    const normalized = normalizeSelectorCondition(condition)
+                    const { operator, value } = getOperatorAndValue(normalized)
+                    // Convert TS column name to SQL column name
+                    const sqlColumn = table
+                        ? tsToSqlColumn(table, column)
+                        : column
+                    const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
+
+                    // Strip $ prefix for PostgREST operators
+                    const pgOperator = operator.replace("$", "")
+                    const condStr = `${col}.${pgOperator}.${value}`
+                    conditions.push(condStr)
+                }
+            }
+        }
+        if (conditions.length > 0) {
+            // Use NOT with OR to create NOR
+            builder = builder.not("or", `(${conditions.join(",")})`, "")
+        }
+        return builder
+    }
+
+    // Handle basic column conditions (default to AND)
+    for (const [column, condition] of Object.entries(selectorConfig)) {
+        if (
+            column === "$and" ||
+            column === "$or" ||
+            column === "$not" ||
+            column === "$nor"
+        )
+            continue
+
+        const normalized = normalizeSelectorCondition(condition)
+        const { operator, value } = getOperatorAndValue(normalized)
         // Convert TS column name to SQL column name
         const sqlColumn = table ? tsToSqlColumn(table, column) : column
         const col = prefix ? `${prefix}.${sqlColumn}` : sqlColumn
 
-        if (isNegated) {
-            const formattedValue = formatValueForNegation(operator, value)
-            builder = builder.not(col, operator, formattedValue)
-        } else {
-            builder = applyOperator(builder, col, operator, value)
-        }
+        builder = applyOperator(builder, col, operator, value)
     }
 
     return builder
 }
 
 /**
- * Applies limit and offset to a PostgREST query builder.
+ * Applies limit and skip to a PostgREST query builder.
  * PostgREST uses range() for pagination.
  */
-export function applyLimitOffset(
+export function applyLimitSkip(
     // biome-ignore lint/suspicious/noExplicitAny: Supabase query builder type
     queryBuilder: PostgrestFilterBuilder<any, any, any, any>,
     limit: number | undefined,
-    offset: number | undefined,
+    skip: number | undefined,
     options?: { referencedTable?: string }
 ) {
-    if (limit === undefined && offset === undefined) {
+    if (limit === undefined && skip === undefined) {
         return queryBuilder
     }
 
-    const from = offset || 0
+    const from = skip || 0
 
-    if (offset !== undefined) {
-        // PostgREST uses range() for offset
+    if (skip !== undefined) {
+        // PostgREST uses range() for skip
         const to =
             limit !== undefined ? from + limit - 1 : from + DEFAULT_RANGE_LIMIT
         return queryBuilder.range(from, to, options)
     }
 
     if (limit !== undefined) {
-        // If only limit is set (no offset), use limit method
+        // If only limit is set (no skip), use limit method
         return queryBuilder.limit(limit, options)
     }
 

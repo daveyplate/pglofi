@@ -16,15 +16,23 @@ export function extractIncludedTables<
             tableNames.push(tableName)
         } else if (
             typeof includeConfig === "object" &&
-            "table" in includeConfig
+            "from" in includeConfig
         ) {
-            const tableName = getTableName(schema[includeConfig.table])
+            const tableName = getTableName(
+                schema[includeConfig.from as keyof TSchema]
+            )
             tableNames.push(tableName)
 
             // Recursively extract nested includes
             if (includeConfig.include) {
                 tableNames.push(
-                    ...extractIncludedTables(schema, includeConfig.include)
+                    ...extractIncludedTables(
+                        schema,
+                        includeConfig.include as IncludeConfig<
+                            TSchema,
+                            AnyPgTable
+                        >
+                    )
                 )
             }
         }

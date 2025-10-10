@@ -15,14 +15,14 @@ import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { tableCollections } from "../rxdb/rxdb"
 import { type FKInfo, getFKInfo } from "../shared/fk-helpers"
-import type { OrderByConfig, QueryConfig } from "../shared/lofi-query-types"
+import type { QueryConfig, SortConfig } from "../shared/lofi-query-types"
 import {
     getOperatorAndValue,
     isLogicalOperator,
-    normalizeWhereCondition,
-    type WhereConfig
-} from "../shared/lofi-where-types"
-import { normalizeOrderByConfig } from "../shared/order-helpers"
+    normalizeSelectorCondition,
+    type SelectorConfig
+} from "../shared/lofi-selector-types"
+import { normalizeSortConfig } from "../shared/order-helpers"
 
 // Type for table records with dynamic structure
 type TableRecord = Record<string, unknown>
@@ -32,70 +32,60 @@ type ConditionExpression = unknown
 
 /**
  * Applies a single comparison operator for TanStack DB queries.
- * Handles negation wrapper if needed.
  */
 function applyComparisonOperator(
     columnRef: unknown,
     operator: string,
-    value: unknown,
-    isNegated = false
+    value: unknown
 ): ConditionExpression {
-    let result: ConditionExpression
-
     switch (operator) {
-        case "eq":
-            result = eq(columnRef as never, value)
-            break
-        case "neq":
-            result = not(eq(columnRef as never, value))
-            break
-        case "gt":
-            result = gt(columnRef as never, value)
-            break
-        case "gte":
-            result = gte(columnRef as never, value)
-            break
-        case "lt":
-            result = lt(columnRef as never, value)
-            break
-        case "lte":
-            result = lte(columnRef as never, value)
-            break
-        case "like":
-            result = like(columnRef as never, value as string)
-            break
-        case "ilike":
-            result = ilike(columnRef as never, value as string)
-            break
-        case "in":
-            result = inArray(columnRef as never, value as unknown[])
-            break
-        case "is":
-            result = eq(columnRef as never, value)
-            break
+        case "$eq":
+            return eq(columnRef as never, value)
+        case "$ne":
+            return not(eq(columnRef as never, value))
+        case "$gt":
+            return gt(columnRef as never, value)
+        case "$gte":
+            return gte(columnRef as never, value)
+        case "$lt":
+            return lt(columnRef as never, value)
+        case "$lte":
+            return lte(columnRef as never, value)
+        case "$like":
+            return like(columnRef as never, value as string)
+        case "$ilike":
+            return ilike(columnRef as never, value as string)
+        case "$in":
+            return inArray(columnRef as never, value as unknown[])
+        case "$nin":
+            // $nin is not in array
+            return not(inArray(columnRef as never, value as unknown[]))
+        case "$exists":
+            // $exists checks if field is null or not
+            return value === true
+                ? not(eq(columnRef as never, null))
+                : eq(columnRef as never, null)
         default:
-            result = eq(columnRef as never, value)
+            return eq(columnRef as never, value)
     }
-
-    return isNegated ? not(result) : result
 }
 
 /**
- * Recursively builds where condition expressions for TanStack DB.
- * Handles AND/OR logical operators and basic column conditions.
+ * Recursively builds selector expressions for TanStack DB.
+ * Handles $and/$or/$not/$nor logical operators and basic column conditions.
  */
-function buildWhereExpression(
+function buildSelectorExpression(
     parentAlias: string,
-    whereConfig: WhereConfig<AnyPgTable>
+    selectorConfig: SelectorConfig<AnyPgTable>
 ): (tables: Record<string, TableRecord>) => ConditionExpression {
-    // Handle AND logical operator
+    // Handle $and logical operator
     if (
-        isLogicalOperator(whereConfig) &&
-        "and" in whereConfig &&
-        whereConfig.and
+        isLogicalOperator(selectorConfig) &&
+        "$and" in selectorConfig &&
+        selectorConfig.$and
     ) {
-        const conditions = whereConfig.and.map((subWhere) =>
-            buildWhereExpression(parentAlias, subWhere)
+        const conditions = selectorConfig.$and.map((subSelector) =>
+            buildSelectorExpression(parentAlias, subSelector)
         )
         return (tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
@@ -105,14 +95,14 @@ function buildWhereExpression(
         }
     }
 
-    // Handle OR logical operator
+    // Handle $or logical operator
     if (
-        isLogicalOperator(whereConfig) &&
-        "or" in whereConfig &&
-        whereConfig.or
+        isLogicalOperator(selectorConfig) &&
+        "$or" in selectorConfig &&
+        selectorConfig.$or
     ) {
-        const conditions = whereConfig.or.map((subWhere) =>
-            buildWhereExpression(parentAlias, subWhere)
+        const conditions = selectorConfig.$or.map((subSelector) =>
+            buildSelectorExpression(parentAlias, subSelector)
         )
         return (tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
@@ -122,25 +112,60 @@ function buildWhereExpression(
         }
     }
 
+    // Handle $not logical operator
+    if (
+        isLogicalOperator(selectorConfig) &&
+        "$not" in selectorConfig &&
+        selectorConfig.$not
+    ) {
+        const innerCondition = buildSelectorExpression(
+            parentAlias,
+            selectorConfig.$not
+        )
+        return (tables: Record<string, TableRecord>) => {
+            const result = innerCondition(tables)
+            return not(result)
+        }
+    }
+
+    // Handle $nor logical operator (NOT OR)
+    if (
+        isLogicalOperator(selectorConfig) &&
+        "$nor" in selectorConfig &&
+        selectorConfig.$nor
+    ) {
+        const conditions = selectorConfig.$nor.map((subSelector) =>
+            buildSelectorExpression(parentAlias, subSelector)
+        )
+        return (tables: Record<string, TableRecord>) => {
+            const results = conditions.map((condFn) => condFn(tables))
+            if (results.length === 0) return true
+            if (results.length === 1) return not(results[0])
+            // NOR is NOT(a OR b OR c...)
+            return not(or(results[0], results[1], ...results.slice(2)))
+        }
+    }
+
     // Handle basic column conditions
     const columnConditions: Array<
         (tables: Record<string, TableRecord>) => ConditionExpression
     > = []
 
-    for (const [column, condition] of Object.entries(whereConfig)) {
-        if (column === "and" || column === "or") continue
+    for (const [column, condition] of Object.entries(selectorConfig)) {
+        if (
+            column === "$and" ||
+            column === "$or" ||
+            column === "$not" ||
+            column === "$nor"
+        )
+            continue
 
-        const normalized = normalizeWhereCondition(condition)
-        const { operator, value, isNegated } = getOperatorAndValue(normalized)
+        const normalized = normalizeSelectorCondition(condition)
+        const { operator, value } = getOperatorAndValue(normalized)
 
         columnConditions.push((tables: Record<string, TableRecord>) => {
             const table = tables[parentAlias]
-            return applyComparisonOperator(
-                table[column],
-                operator,
-                value,
-                isNegated || false
-            )
+            return applyComparisonOperator(table[column], operator, value)
         })
     }
 
@@ -160,14 +185,14 @@ function buildWhereExpression(
 }
 
 /**
- * Applies sorting to an array of records based on order configuration.
+ * Applies sorting to an array of records based on sort configuration.
  * Handles multiple sort keys and null/undefined values.
  */
-function applyOrderToArray<T extends TableRecord>(
+function applySortToArray<T extends TableRecord>(
     records: T[],
-    orderByConfig: OrderByConfig<AnyPgTable>
+    sortConfig: SortConfig<AnyPgTable>
 ): T[] {
-    const orders = normalizeOrderByConfig(orderByConfig)
+    const orders = normalizeSortConfig(sortConfig)
     const sorted = [...records]
 
     sorted.sort((a, b) => {
@@ -213,23 +238,21 @@ export function buildJoinCondition(
 }
 
 /**
- * Applies order, limit, and offset to a TanStack DB query.
- * Defaults to ordering by 'createdAt asc' if no explicit order is provided.
+ * Applies sort, limit, and skip to a TanStack DB query.
+ * Defaults to sorting by 'createdAt asc' if no explicit sort is provided.
  */
-export function applyOrderLimitOffset<
-    TSchema extends Record<string, AnyPgTable>
->(
+export function applySortLimitSkip<TSchema extends Record<string, AnyPgTable>>(
     q: unknown,
     parentAlias: string,
     query?: QueryConfig<TSchema, AnyPgTable>
 ): unknown {
     let currentQuery = q
 
-    const hasExplicitOrder = query?.orderBy !== undefined
+    const hasExplicitSort = query?.sort !== undefined
 
-    // Always apply order, defaulting to 'createdAt asc' if no explicit order is provided
-    const orders = hasExplicitOrder
-        ? normalizeOrderByConfig(query.orderBy!)
+    // Always apply sort, defaulting to 'createdAt asc' if no explicit sort is provided
+    const orders = hasExplicitSort
+        ? normalizeSortConfig(query.sort!)
         : [{ column: "createdAt", ascending: true }]
 
     for (const { column, ascending } of orders) {
@@ -257,21 +280,21 @@ export function applyOrderLimitOffset<
         ).limit(query.limit)
     }
 
-    // Apply offset
-    if (query?.offset !== undefined) {
+    // Apply skip
+    if (query?.skip !== undefined) {
         currentQuery = (
             currentQuery as { offset: (count: number) => unknown }
-        ).offset(query.offset)
+        ).offset(query.skip)
     }
 
     return currentQuery
 }
 
 /**
- * Builds a complete TanStack DB query with where conditions, joins, and ordering.
+ * Builds a complete TanStack DB query with selector conditions, joins, and ordering.
  * Recursively handles nested includes and applies all filters in one pass.
  *
- * Note: order/limit/offset for joins are applied post-processing in flatToHierarchical
+ * Note: sort/limit/skip for joins are applied post-processing in flatToHierarchical
  * because TanStack DB doesn't support them at query time for relations.
  */
 export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
@@ -285,17 +308,20 @@ export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
 ) {
     let currentQuery = q
 
-    // Apply where conditions (for both root and joins)
-    if (query?.where) {
-        const whereExpression = buildWhereExpression(parentAlias, query.where)
+    // Apply selector conditions (for both root and joins)
+    if (query?.selector) {
+        const selectorExpression = buildSelectorExpression(
+            parentAlias,
+            query.selector
+        )
         currentQuery = (
             currentQuery as { where: (expr: unknown) => unknown }
-        ).where(whereExpression)
+        ).where(selectorExpression)
     }
 
-    // Apply order/limit/offset (only for root - joins handle this in post-processing)
+    // Apply sort/limit/skip (only for root - joins handle this in post-processing)
     if (isRoot) {
-        currentQuery = applyOrderLimitOffset(currentQuery, parentAlias, query)
+        currentQuery = applySortLimitSkip(currentQuery, parentAlias, query)
     }
 
     // Build joins recursively
@@ -305,10 +331,10 @@ export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
         )) {
             const config =
                 typeof relationConfig === "string"
-                    ? { table: relationConfig }
+                    ? { from: relationConfig }
                     : relationConfig
 
-            const relatedTable = schema[config.table]
+            const relatedTable = schema[config.from]
             const relatedTableName = getTableName(relatedTable)
             const relatedCollection = tableCollections[relatedTableName]
 
@@ -336,12 +362,12 @@ export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
                 }
             ).join({ [relatedAlias]: relatedCollection }, joinCondition, "left")
 
-            // Recursively handle this relation's where conditions and nested includes
+            // Recursively handle this relation's selector conditions and nested includes
             currentQuery = buildLocalQuery(
                 schema,
                 currentQuery,
                 relatedTableName,
-                config.table,
+                config.from,
                 relatedAlias,
                 config,
                 false
@@ -354,7 +380,7 @@ export function buildLocalQuery<TSchema extends Record<string, AnyPgTable>>(
 
 /**
  * Converts flat join results to hierarchical format.
- * Groups related data by parent ID and applies limits/offsets to one-to-many relations.
+ * Groups related data by parent ID and applies limits/skips to one-to-many relations.
  */
 export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
     schema: TSchema,
@@ -389,16 +415,18 @@ export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
                 query.include
             )) {
                 const config: {
-                    table: string
+                    from: string
                     many?: boolean
-                    on?: string | Partial<Record<string, string>>
+                    localField?: string
+                    foreignField?: string
                 } =
                     typeof relationConfig === "string"
-                        ? { table: relationConfig }
+                        ? { from: relationConfig }
                         : (relationConfig as {
-                              table: string
+                              from: string
                               many?: boolean
-                              on?: string | Partial<Record<string, string>>
+                              localField?: string
+                              foreignField?: string
                           })
                 const fkInfo = getFKInfo(schema, parentTableKey, config)
 
@@ -412,26 +440,28 @@ export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
             query.include
         )) {
             const config: {
-                table: string
+                from: string
                 include?: unknown
-                where?: unknown
+                selector?: unknown
                 many?: boolean
                 limit?: number
-                offset?: number
-                orderBy?: OrderByConfig<AnyPgTable>
-                on?: string | Partial<Record<string, string>>
+                skip?: number
+                sort?: SortConfig<AnyPgTable>
+                localField?: string
+                foreignField?: string
             } =
                 typeof relationConfig === "string"
-                    ? { table: relationConfig }
+                    ? { from: relationConfig }
                     : (relationConfig as {
-                          table: string
+                          from: string
                           include?: unknown
-                          where?: unknown
+                          selector?: unknown
                           many?: boolean
                           limit?: number
-                          offset?: number
-                          orderBy?: OrderByConfig<AnyPgTable>
-                          on?: string | Partial<Record<string, string>>
+                          skip?: number
+                          sort?: SortConfig<AnyPgTable>
+                          localField?: string
+                          foreignField?: string
                       })
 
             const relatedAlias: string = `${parentAlias}_${relationName}`
@@ -462,8 +492,8 @@ export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
                 const nestedResults = flatToHierarchical(
                     schema,
                     [syntheticRow],
-                    getTableName(schema[config.table as keyof TSchema]),
-                    config.table as string,
+                    getTableName(schema[config.from as keyof TSchema]),
+                    config.from as string,
                     relatedAlias,
                     config as QueryConfig<TSchema, AnyPgTable>
                 )
@@ -487,28 +517,30 @@ export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
         }
     }
 
-    // Apply order, limit, and offset to one-to-many relations after grouping
+    // Apply sort, limit, and skip to one-to-many relations after grouping
     for (const parentEntry of parentMap.values()) {
         for (const [relationName, relationConfig] of Object.entries(
             query.include
         )) {
             const config: {
-                table: string
+                from: string
                 many?: boolean
                 limit?: number
-                offset?: number
-                orderBy?: OrderByConfig<AnyPgTable>
-                on?: string | Partial<Record<string, string>>
+                skip?: number
+                sort?: SortConfig<AnyPgTable>
+                localField?: string
+                foreignField?: string
             } =
                 typeof relationConfig === "string"
-                    ? { table: relationConfig }
+                    ? { from: relationConfig }
                     : (relationConfig as {
-                          table: string
+                          from: string
                           many?: boolean
                           limit?: number
-                          offset?: number
-                          orderBy?: OrderByConfig<AnyPgTable>
-                          on?: string | Partial<Record<string, string>>
+                          skip?: number
+                          sort?: SortConfig<AnyPgTable>
+                          localField?: string
+                          foreignField?: string
                       })
 
             const fkInfo = getFKInfo(schema, parentTableKey, config)
@@ -519,16 +551,16 @@ export function flatToHierarchical<TSchema extends Record<string, AnyPgTable>>(
             ) {
                 let relationArray = parentEntry[relationName] as TableRecord[]
 
-                const hasExplicitOrder = config.orderBy !== undefined
+                const hasExplicitSort = config.sort !== undefined
 
-                // Always apply order, defaulting to 'createdAt asc' if no explicit order is provided
-                const orderToApply = hasExplicitOrder
-                    ? config.orderBy!
-                    : "createdAt"
-                relationArray = applyOrderToArray(relationArray, orderToApply)
+                // Always apply sort, defaulting to 'createdAt asc' if no explicit sort is provided
+                const sortToApply = hasExplicitSort
+                    ? config.sort!
+                    : ["createdAt"]
+                relationArray = applySortToArray(relationArray, sortToApply)
 
-                // Apply offset and limit
-                const startIndex = config.offset || 0
+                // Apply skip and limit
+                const startIndex = config.skip || 0
                 const endIndex =
                     config.limit !== undefined
                         ? startIndex + config.limit

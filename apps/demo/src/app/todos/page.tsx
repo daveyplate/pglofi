@@ -17,28 +17,25 @@ export default function TodosPage() {
     const throttledQ = useThrottle(q, 300)
 
     const { data: todos, isLoading } = lofi.useQuery(sessionData && "todos", {
-        orderBy: { createdAt: "desc" },
+        sort: [{ createdAt: "desc" }],
         include: { user: "profiles" },
-        where: {
-            task: { ilike: `%${throttledQ}%` },
+        selector: {
+            task: { $ilike: `%${throttledQ}%` },
             userId: sessionData?.user.id
         }
     })
 
-    // const { data: users, isLoading } = lofi.useQuery(
-    //     sessionData && "profiles",
-    //     {
-    //         orderBy: { createdAt: "desc" },
-    //         include: {
-    //             todos: {
-    //                 table: "todos",
-    //                 many: true,
-    //                 include: { user: "profiles" },
-    //                 where: { task: { ilike: `%${q}%` } }
-    //             }
+    // const { data: users } = lofi.useQuery(sessionData && "profiles", {
+    //     sort: [{ createdAt: "desc" }],
+    //     include: {
+    //         todos: {
+    //             from: "todos",
+    //             many: true,
+    //             include: { user: "profiles" },
+    //             selector: { $and: [{ task: "heh" }] }
     //         }
     //     }
-    // )
+    // })
 
     const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
         e.preventDefault()

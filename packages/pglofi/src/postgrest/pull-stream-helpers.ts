@@ -21,9 +21,9 @@ function extractRelatedDocs<TSchema extends Record<string, AnyPgTable>>(
 ) {
     const config =
         typeof relationConfig === "string"
-            ? { table: relationConfig }
+            ? { from: relationConfig }
             : relationConfig
-    const relatedTableName = getTableName(schema[config.table])
+    const relatedTableName = getTableName(schema[config.from])
     const relatedData = doc[relationName]
 
     if (!relatedData) return
