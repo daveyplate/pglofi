@@ -1,5 +1,6 @@
 import { type Collection, createCollection } from "@tanstack/react-db"
 import { getTableName } from "drizzle-orm"
+import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useEffect, useSyncExternalStore } from "react"
 import {
     addRxPlugin,
@@ -29,10 +30,15 @@ import {
     transformSqlRowsToTs,
     transformTsToSql
 } from "../shared/column-mapping"
+import { filterTableSchema } from "../shared/schema-helpers"
 import { notify, subscribe } from "../shared/subscriptions"
 import type { LofiConfig } from "./lofi-config"
 
-let lofiConfig: LofiConfig | null = null
+type InternalLofiConfig = Omit<LofiConfig, "schema"> & {
+    schema: Record<string, AnyPgTable>
+}
+
+let lofiConfig: InternalLofiConfig | null = null
 export let rxDb: RxDatabase | null = null
 
 export let tableCollections: Record<string, Collection<object, string>> = {}
@@ -85,7 +91,15 @@ async function destroyDatabase() {
     rxDb = null
 }
 
-export async function initializeDb(config: LofiConfig) {
+export async function initializeDb(userConfig: LofiConfig) {
+    const sanitizedSchema = filterTableSchema(userConfig.schema)
+
+    const config: InternalLofiConfig = {
+        enabled: true,
+        ...userConfig,
+        schema: sanitizedSchema
+    }
+
     if (config.devMode === undefined) {
         config.devMode = process.env.NODE_ENV === "development"
     }
@@ -130,7 +144,7 @@ async function createDatabase({
     storage,
     version,
     migrationStrategy
-}: LofiConfig): Promise<RxDatabase> {
+}: InternalLofiConfig): Promise<RxDatabase> {
     if (devMode) {
         await import("rxdb/plugins/dev-mode").then((module) =>
             addRxPlugin(module.RxDBDevModePlugin)

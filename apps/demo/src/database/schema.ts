@@ -4,6 +4,7 @@ import {
     type AnyPgColumn,
     boolean,
     jsonb,
+    pgPolicy,
     pgTable,
     serial,
     text,
@@ -22,6 +23,12 @@ export const jwkss = authSchema.jwkss.enableRLS()
 
 const authUuid = (userIdColumn: AnyPgColumn) =>
     sql`(select auth.user_id()::uuid = ${userIdColumn})`
+
+export const usersSelectPolicy = pgPolicy("crud-authenticated-policy-select", {
+    for: "select",
+    to: authenticatedRole,
+    using: authUuid(authSchema.users.id)
+}).link(authSchema.users)
 
 export const profiles = pgTable(
     "profiles",

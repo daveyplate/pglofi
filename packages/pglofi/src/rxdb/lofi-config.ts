@@ -1,9 +1,8 @@
-import type { AnyPgTable } from "drizzle-orm/pg-core"
 import type { RxCollection } from "rxdb"
 
 export type LofiConfig = {
     name?: string
-    schema: Record<string, AnyPgTable>
+    schema: Record<string, unknown>
     devMode?: boolean
     storage?: "localstorage" | "memory"
     enabled?: boolean
