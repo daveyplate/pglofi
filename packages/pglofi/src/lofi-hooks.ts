@@ -49,10 +49,10 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
 
         const {
             data: remoteData,
-            isPending,
-            isFetching,
+            isLoading: pgLoading,
+            isValidating,
             error,
-            refetch: refetchPostgrest
+            mutate
         } = usePostgrestQuery(schema, db && tableKey, query)
 
         const { data, isLoading } = useLocalQuery(schema, db && tableKey, query)
@@ -71,16 +71,16 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             schema,
             data,
             remoteData,
-            isFetching,
+            isValidating,
             tableKey,
             query
         })
 
         const refetch = useMemo(
             () => async () => {
-                await refetchPostgrest()
+                await mutate()
             },
-            [refetchPostgrest]
+            [mutate]
         )
 
         // Determine Ably channels and subscribe to them for real-time updates
@@ -91,7 +91,7 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
         return {
             data,
             remoteData,
-            isLoading: data?.length === 0 && (isLoading || isPending),
+            isLoading: data?.length === 0 && (isLoading || pgLoading),
             error,
             refetch
         }

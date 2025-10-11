@@ -1,7 +1,7 @@
-import { useQueries } from "@tanstack/react-query"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import useSWR from "swr"
 
 import { postgrest } from "./postgrest/postgrest"
 import { pushToPullStream } from "./postgrest/pull-stream-helpers"
@@ -17,7 +17,7 @@ interface UseStaleEntitiesParams<
     schema: TSchema
     data: unknown[] | undefined
     remoteData: unknown[] | undefined
-    isFetching: boolean
+    isValidating: boolean
     tableKey?: TTableKey | null | 0 | false | ""
     query?: TQuery
 }
@@ -30,7 +30,7 @@ export function useStaleEntities<
     schema,
     data,
     remoteData,
-    isFetching,
+    isValidating,
     tableKey,
     query
 }: UseStaleEntitiesParams<TSchema, TTableKey, TQuery>): void {
@@ -42,7 +42,7 @@ export function useStaleEntities<
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
     useEffect(() => {
-        if (!remoteData || !data || isFetching || !tableName) return
+        if (!remoteData || !data || isValidating || !tableName) return
 
         // Helper to strip includes from an entity
         const stripIncludes = (
@@ -222,65 +222,75 @@ export function useStaleEntities<
         }
 
         setStaleEntities(nextStaleEntities)
-    }, [remoteData, isFetching])
+    }, [remoteData, isValidating])
 
-    // Fetch stale entities from remote to check if they were deleted
-    useQueries({
-        queries: Object.entries(staleEntities).map(([table, entities]) => {
-            const entityIds = entities.map((e) => e.id as string)
-            // Find the Drizzle table from schema for column mapping
-            const drizzleTable = Object.values(schema).find(
-                (t) => getTableName(t) === table
-            )
+    const staleQueryKey = useMemo(() => {
+        const entries = Object.entries(staleEntities)
+            .map(([table, entities]) => ({
+                table,
+                ids: entities
+                    .map((entity) => String((entity as { id: unknown }).id))
+                    .sort()
+            }))
+            .filter(({ ids }) => ids.length > 0)
+            .sort((a, b) => a.table.localeCompare(b.table))
 
-            return {
-                queryKey: [`pglofi:${table}`, "in", entityIds.sort().join(",")],
-                queryFn: async () => {
-                    const { data, error } = await postgrest
-                        .from(table)
-                        .select("*")
-                        .in("id", entityIds)
+        if (entries.length === 0) {
+            return null
+        }
 
-                    if (error) throw error
+        return ["pglofi:stale-entities", entries] as const
+    }, [staleEntities])
 
-                    // Transform SQL column names to TypeScript property names
-                    const transformedData = drizzleTable
-                        ? transformSqlRowsToTs(drizzleTable, data)
-                        : data
+    useSWR(staleQueryKey, async ([, entries]) => {
+        await Promise.all(
+            entries.map(async ({ table, ids }) => {
+                if (ids.length === 0) return
 
-                    if (transformedData.length > 0) {
-                        pushToPullStream(table, transformedData)
-                    }
+                const { data, error } = await postgrest
+                    .from(table)
+                    .select("*")
+                    .in("id", ids)
 
-                    const missingEntities = entityIds
-                        .filter(
-                            (entityId) =>
-                                !transformedData.find(
-                                    (row) =>
-                                        String(
-                                            (row as Record<string, unknown>).id
-                                        ) === entityId
-                                )
-                        )
-                        .map((entityId) =>
-                            tableCollections[table].get(entityId)
-                        )
-                        .filter(Boolean)
+                if (error) throw error
 
-                    if (missingEntities.length > 0) {
-                        pushToPullStream(
-                            table,
-                            missingEntities.map((entity) => ({
-                                ...entity,
-                                _deleted: true
-                            }))
-                        )
-                    }
+                const drizzleTable = Object.values(schema).find(
+                    (t) => getTableName(t) === table
+                )
 
-                    return transformedData
-                },
-                enabled: entityIds.length > 0
-            }
-        })
+                const transformedData = drizzleTable
+                    ? transformSqlRowsToTs(drizzleTable, data)
+                    : data
+
+                if (transformedData.length > 0) {
+                    pushToPullStream(table, transformedData)
+                }
+
+                const missingEntities = ids
+                    .filter(
+                        (entityId) =>
+                            !transformedData.find(
+                                (row) =>
+                                    String(
+                                        (row as Record<string, unknown>).id
+                                    ) === entityId
+                            )
+                    )
+                    .map((entityId) => tableCollections[table].get(entityId))
+                    .filter(Boolean)
+
+                if (missingEntities.length > 0) {
+                    pushToPullStream(
+                        table,
+                        missingEntities.map((entity) => ({
+                            ...entity,
+                            _deleted: true
+                        }))
+                    )
+                }
+            })
+        )
+
+        return null
     })
 }
