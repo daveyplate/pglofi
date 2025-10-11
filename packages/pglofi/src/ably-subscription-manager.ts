@@ -2,7 +2,7 @@ import type * as Ably from "ably"
 import { getTableName } from "drizzle-orm"
 import type { RxDatabase } from "rxdb"
 import { getAbly } from "./ably/ably-client"
-import { postgrest } from "./postgrest/postgrest"
+import { getPostgrest } from "./postgrest/postgrest"
 import { getLofiConfig, sendToPullStream } from "./rxdb/rxdb"
 import { transformSqlRowsToTs } from "./shared/column-mapping"
 
@@ -100,6 +100,8 @@ class AblySubscriptionManager {
                         const foundDocuments = await db[tableName]
                             .find({ selector: { id: { $eq: entityId } } })
                             .exec()
+
+                        const postgrest = getPostgrest()
 
                         // Handle INSERT (document doesn't exist locally)
                         if (foundDocuments.length === 0) {

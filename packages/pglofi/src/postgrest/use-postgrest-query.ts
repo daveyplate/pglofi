@@ -5,7 +5,7 @@ import useSWR from "swr"
 import { transformPostgrestResponse } from "../shared/column-mapping"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { applyPostgrestFilters } from "./include-filters"
-import { postgrest } from "./postgrest"
+import { getPostgrest } from "./postgrest"
 import { buildSelectString } from "./select-builder"
 
 export function usePostgrestQuery<
@@ -33,6 +33,7 @@ export function usePostgrestQuery<
         !tableName || !table
             ? null
             : async () => {
+                  const postgrest = getPostgrest()
                   let queryBuilder = postgrest
                       .from(tableName)
                       .select(selectString)

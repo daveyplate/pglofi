@@ -26,7 +26,7 @@ addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
 
 import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
-import { postgrest } from "../postgrest/postgrest"
+import { getPostgrest } from "../postgrest/postgrest"
 import {
     transformSqlRowsToTs,
     transformTsToSql
@@ -111,6 +111,10 @@ export async function initializeDb(userConfig: LofiConfig) {
 
     if (config.storage === undefined) {
         config.storage = "memory"
+    }
+
+    if (config.dbURL === undefined) {
+        config.dbURL = process.env.NEXT_PUBLIC_NEON_DATA_API_URL
     }
 
     // Check if config has changed
@@ -291,6 +295,8 @@ async function createDatabase({
             waitForLeadership: true,
             push: {
                 async handler(changeRows) {
+                    const postgrest = getPostgrest()
+
                     const conflicts = []
 
                     for (const changeRow of changeRows) {

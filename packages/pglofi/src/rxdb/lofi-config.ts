@@ -6,6 +6,8 @@ export type LofiConfig = {
     devMode?: boolean
     storage?: "localstorage" | "memory"
     enabled?: boolean
+    dbURL?: string
+    token?: string
     sync?: "ably" | false | undefined | null
     ablyToken?: string
     version?: number

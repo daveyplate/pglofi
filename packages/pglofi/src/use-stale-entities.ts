@@ -2,8 +2,7 @@ import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useEffect, useMemo, useState } from "react"
 import useSWR from "swr"
-
-import { postgrest } from "./postgrest/postgrest"
+import { getPostgrest } from "./postgrest/postgrest"
 import { pushToPullStream } from "./postgrest/pull-stream-helpers"
 import { tableCollections } from "./rxdb/rxdb"
 import { transformSqlRowsToTs } from "./shared/column-mapping"
@@ -246,6 +245,8 @@ export function useStaleEntities<
         await Promise.all(
             entries.map(async ({ table, ids }) => {
                 if (ids.length === 0) return
+
+                const postgrest = getPostgrest()
 
                 const { data, error } = await postgrest
                     .from(table)
