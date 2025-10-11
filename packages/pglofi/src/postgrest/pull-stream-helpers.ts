@@ -105,8 +105,6 @@ export async function pushToPullStream(
         }
 
         if (existingDoc.updatedAt === row.updatedAt && !row._deleted) {
-            console.log("existingDoc", existingDoc.updatedAt, row.updatedAt)
-
             return false
         }
 
