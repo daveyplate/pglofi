@@ -114,20 +114,7 @@ export async function initializeDb(userConfig: LofiConfig) {
     }
 
     // Check if config has changed
-    if (
-        !lofiConfig ||
-        JSON.stringify({
-            ...lofiConfig,
-            schema: undefined,
-            migrationStrategy: undefined
-        }) !==
-            JSON.stringify({
-                ...config,
-                schema: undefined,
-                migrationStrategy: undefined
-            }) ||
-        lofiConfig.schema !== config.schema
-    ) {
+    if (!isEqual(lofiConfig, config)) {
         await destroyDatabase()
         lofiConfig = config
         notify("lofi:config", config)

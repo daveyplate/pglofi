@@ -77,6 +77,9 @@ export async function pushToPullStream(
     if (!rxDb) throw new Error("Database not initialized")
 
     const collection = rxDb[tableName]
+
+    if (!collection) throw new Error(`Collection ${tableName} not found`)
+
     // Convert IDs to strings to match RxDB storage format
     const ids = rows.map((row) => String(row.id)).filter(Boolean)
     const existingDocs = await collection.storageInstance.findDocumentsById(
