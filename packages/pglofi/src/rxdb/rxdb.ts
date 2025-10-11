@@ -25,6 +25,7 @@ addRxPlugin(RxDBMigrationSchemaPlugin)
 addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
 
+import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
 import { postgrest } from "../postgrest/postgrest"
 import {
     transformSqlRowsToTs,
@@ -106,6 +107,10 @@ export async function initializeDb(userConfig: LofiConfig) {
 
     if (config.ablyToken === undefined) {
         config.ablyToken = process.env.NEXT_PUBLIC_ABLY_API_KEY
+    }
+
+    if (config.storage === undefined) {
+        config.storage = "memory"
     }
 
     // Check if config has changed
@@ -363,45 +368,96 @@ async function createDatabase({
                                     conflicts.push(transformedMasterState)
                                 }
                             } else {
-                                const update = {
-                                    ...changeRow.newDocumentState
-                                }
+                                if (
+                                    realMasterState ||
+                                    changeRow.assumedMasterState
+                                ) {
+                                    const changes = differenceWith(
+                                        toPairs(changeRow.newDocumentState),
+                                        toPairs(realMasterState || {}),
+                                        isEqual
+                                    )
 
-                                delete update._deleted
-                                delete update.isPending
+                                    const update = fromPairs(changes)
 
-                                // Transform TypeScript property names to SQL column names
-                                const sqlUpdate = transformTsToSql(
-                                    schemaTable,
-                                    update
-                                )
+                                    delete update._deleted
+                                    delete update.isPending
 
-                                const { data, error } = await postgrest
-                                    .from(tableName)
-                                    .upsert(sqlUpdate, {
-                                        onConflict: "id"
+                                    // Transform TypeScript property names to SQL column names
+                                    const sqlUpdate = transformTsToSql(
+                                        schemaTable,
+                                        update
+                                    )
+
+                                    const { data, error } = await postgrest
+                                        .from(tableName)
+                                        .update(sqlUpdate)
+                                        .eq("id", changeRow.newDocumentState.id)
+                                        .select()
+
+                                    if (error) {
+                                        if (!error.code) throw error
+
+                                        conflicts.push(transformedMasterState)
+                                    }
+
+                                    // Transform SQL column names back to TypeScript property names
+                                    const transformedData =
+                                        transformSqlRowsToTs(
+                                            schemaTable,
+                                            data || []
+                                        )
+
+                                    sendToPullStream(tableName, {
+                                        checkpoint: {},
+                                        documents:
+                                            transformedData as unknown as Record<
+                                                string,
+                                                unknown
+                                            >[]
                                     })
+                                } else {
+                                    const insert = {
+                                        ...changeRow.newDocumentState
+                                    }
 
-                                if (error) {
-                                    if (!error.code) throw error
+                                    delete insert._deleted
+                                    delete insert.isPending
 
-                                    conflicts.push(transformedMasterState)
+                                    // Transform TypeScript property names to SQL column names
+                                    const sqlInsert = transformTsToSql(
+                                        schemaTable,
+                                        insert
+                                    )
+
+                                    const { data, error } = await postgrest
+                                        .from(tableName)
+                                        .upsert(sqlInsert, {
+                                            onConflict: "id"
+                                        })
+
+                                    if (error) {
+                                        if (!error.code) throw error
+
+                                        conflicts.push(transformedMasterState)
+                                    }
+
+                                    // Transform SQL column names back to TypeScript property names
+                                    const transformedData =
+                                        transformSqlRowsToTs(
+                                            schemaTable,
+                                            data || []
+                                        )
+
+                                    sendToPullStream(tableName, {
+                                        checkpoint: {},
+                                        documents:
+                                            transformedData as unknown as Record<
+                                                string,
+                                                unknown
+                                            >[]
+                                    })
                                 }
-
-                                // Transform SQL column names back to TypeScript property names
-                                const transformedData = transformSqlRowsToTs(
-                                    schemaTable,
-                                    data || []
-                                )
-
-                                sendToPullStream(tableName, {
-                                    checkpoint: {},
-                                    documents:
-                                        transformedData as unknown as Record<
-                                            string,
-                                            unknown
-                                        >[]
-                                })
                             }
                         }
                     }

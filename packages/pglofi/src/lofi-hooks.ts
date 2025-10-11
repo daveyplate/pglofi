@@ -22,6 +22,18 @@ export interface UseLofiQueryResult<
     refetch: () => Promise<void>
 }
 
+export interface UseLofiQueryOneResult<
+    TSchema extends Record<string, AnyPgTable>,
+    TTableKey extends keyof TSchema,
+    TQuery
+> {
+    data: InferQueryResult<TSchema, TTableKey, TQuery> | undefined
+    remoteData: InferQueryResult<TSchema, TTableKey, TQuery> | undefined
+    isLoading: boolean
+    error: Error | null
+    refetch: () => Promise<void>
+}
+
 export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
     schema: TSchema
 ) => {
@@ -85,7 +97,33 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
         }
     }
 
-    return { useQuery }
+    function useQueryOne<
+        TTableKey extends keyof TSchema,
+        TQuery extends QueryConfig<TSchema, TSchema[TTableKey]>
+    >(
+        tableKey?: TTableKey | null | 0 | false | "",
+        query?: TQuery
+    ): UseLofiQueryOneResult<TSchema, TTableKey, TQuery> {
+        const queryWithLimit = useMemo(
+            () => ({
+                ...query,
+                limit: 1
+            }),
+            [query]
+        ) as TQuery
+
+        const result = useQuery(tableKey, queryWithLimit)
+
+        return {
+            data: result.data?.[0],
+            remoteData: result.remoteData?.[0],
+            isLoading: result.isLoading,
+            error: result.error,
+            refetch: result.refetch
+        }
+    }
+
+    return { useQuery, useQueryOne }
 }
 
 export const createPostgrestHooks = <
