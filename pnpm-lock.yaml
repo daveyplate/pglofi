@@ -292,9 +292,6 @@ importers:
 
   packages/pglofi:
     dependencies:
-      '@ably-labs/models':
-        specifier: ^0.0.4
-        version: 0.0.4(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(typedoc@0.25.13(typescript@5.9.3))
       '@standard-schema/spec':
         specifier: ^1.0.0
         version: 1.0.0

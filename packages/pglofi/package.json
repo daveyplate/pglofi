@@ -21,7 +21,6 @@
     "author": "daveycodez",
     "license": "MIT",
     "dependencies": {
-        "@ably-labs/models": "^0.0.4",
         "@standard-schema/spec": "^1.0.0",
         "@supabase/postgrest-js": "^2.75.0",
         "@tanstack/db": "^0.4.8",
