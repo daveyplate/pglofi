@@ -11,6 +11,11 @@ import { useAblySubscriptions } from "./use-ably-subscriptions"
  * Channel naming follows the pattern from outbox triggers:
  * - Primary channels: `tableName:id:{id}`
  * - Foreign key channels: `tableName:fkColumn:{value}`
+ *
+ * Priority order:
+ * 1. If selector filters by FK column(s), subscribe to those FK channels
+ * 2. If there are non-many FK includes, subscribe to FK channels from data
+ * 3. Otherwise, subscribe to entity ID channels
  */
 export function useAblyChannels<
     TSchema extends Record<string, AnyPgTable>,
@@ -51,6 +56,20 @@ export function useAblyChannels<
             }
         }
 
+        // Check if the selector is filtering by a foreign key column
+        const selectorFKColumns = new Set<string>()
+        if (query?.selector) {
+            for (const key of Object.keys(query.selector)) {
+                // Skip logical operators
+                if (key.startsWith("$")) continue
+
+                // Check if this column is a foreign key
+                if (fkColumns.has(key)) {
+                    selectorFKColumns.add(key)
+                }
+            }
+        }
+
         // Check if we have any non-many includes that use foreign keys
         const hasNonManyFKInclude = checkForNonManyFKIncludes(
             schema,
@@ -60,8 +79,27 @@ export function useAblyChannels<
             fkColumns
         )
 
-        if (hasNonManyFKInclude.length > 0) {
-            // Case 1: We have non-many FK includes - subscribe to FK channels
+        if (selectorFKColumns.size > 0 && query?.selector) {
+            // Case 1: Selector is filtering by FK column(s) - subscribe to those FK channels
+            for (const fkColumnName of selectorFKColumns) {
+                const selector = query.selector as Record<string, unknown>
+                const value = selector[fkColumnName]
+                // Handle both direct values and comparison conditions
+                const actualValue =
+                    typeof value === "object" &&
+                    value !== null &&
+                    "$eq" in value
+                        ? (value as { $eq: unknown }).$eq
+                        : value
+
+                if (actualValue != null) {
+                    allChannels.add(
+                        `${tableName}:${fkColumnName}:${actualValue}`
+                    )
+                }
+            }
+        } else if (hasNonManyFKInclude.length > 0) {
+            // Case 2: We have non-many FK includes - subscribe to FK channels
             for (const entity of data) {
                 for (const fkColumnName of hasNonManyFKInclude) {
                     const value = entity[fkColumnName]
@@ -71,7 +109,7 @@ export function useAblyChannels<
                 }
             }
         } else {
-            // Case 2: No non-many FK includes - subscribe to entity ID channels
+            // Case 3: No FK selector or FK includes - subscribe to entity ID channels
             for (const entity of data) {
                 if (entity.id) {
                     allChannels.add(`${tableName}:id:${entity.id}`)
@@ -79,7 +117,7 @@ export function useAblyChannels<
             }
         }
 
-        // Case 3: Recursively handle all includes
+        // Case 4: Recursively handle all includes
         if (query?.include) {
             processIncludes(schema, query.include, data, allChannels)
         }
