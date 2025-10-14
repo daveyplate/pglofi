@@ -47,6 +47,8 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
         const db = useDb()
         const config = useLofiConfig()
 
+        const { data, isLoading } = useLocalQuery(schema, db && tableKey, query)
+
         const {
             data: remoteData,
             isLoading: pgLoading,
@@ -54,8 +56,6 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             error,
             mutate
         } = usePostgrestQuery(schema, db && tableKey, query)
-
-        const { data, isLoading } = useLocalQuery(schema, db && tableKey, query)
 
         // Send remote data to pull streams for local sync
         // biome-ignore lint/correctness/useExhaustiveDependencies: schema is stable
