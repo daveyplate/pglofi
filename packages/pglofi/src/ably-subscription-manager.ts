@@ -103,6 +103,14 @@ class AblySubscriptionManager {
 
                         const postgrest = getPostgrest()
 
+                        // Skip INSERT messages if we already have the document
+                        if (
+                            messageName === "insert" &&
+                            foundDocuments.length > 0
+                        ) {
+                            return
+                        }
+
                         // Handle INSERT (document doesn't exist locally)
                         if (foundDocuments.length === 0) {
                             let messageData = message.data
