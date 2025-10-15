@@ -1,7 +1,7 @@
 "use client"
 
 import { AuthUIProvider } from "@daveyplate/better-auth-ui"
-import { setPostgrestToken, useInitializeDb } from "@daveyplate/pglofi"
+import { useInitializeDb } from "@daveyplate/pglofi"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -16,13 +16,13 @@ export const queryClient = new QueryClient()
 export function Providers({ children }: { children: ReactNode }) {
     const router = useRouter()
     const { data: sessionData } = authClient.useSession()
-    setPostgrestToken(sessionData?.session.token)
 
     useInitializeDb({
         name: "better-auth-starter",
         schema,
         storage: "memory",
         enabled: !!sessionData,
+        token: sessionData?.session.token,
         sync: false
     })
 

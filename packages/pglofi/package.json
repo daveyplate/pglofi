@@ -21,15 +21,18 @@
     "author": "daveycodez",
     "license": "MIT",
     "dependencies": {
+        "@nanostores/query": "^0.3.4",
+        "@nanostores/react": "^1.0.0",
         "@standard-schema/spec": "^1.0.0",
         "@supabase/postgrest-js": "^2.75.0",
-        "@tanstack/db": "^0.4.8",
-        "@tanstack/react-db": "^0.1.30",
-        "@tanstack/rxdb-db-collection": "^0.1.19",
+        "@tanstack/db": "^0.4.9",
+        "@tanstack/react-db": "^0.1.31",
+        "@tanstack/rxdb-db-collection": "^0.1.20",
         "ably": "^2.14.0",
         "debug": "^4.4.3",
         "drizzle-orm": "^0.44.6",
         "lodash": "^4.17.21",
+        "nanostores": "^1.0.1",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "rxdb": "^16.19.1",
@@ -38,12 +41,12 @@
         "uuid": "^13.0.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.2.5",
+        "@biomejs/biome": "2.2.6",
         "@types/debug": "^4.1.12",
         "@types/lodash": "^4.17.20",
         "@types/node": "^24.7.2",
         "@types/react": "^19.2.2",
-        "@types/react-dom": "^19.2.1",
+        "@types/react-dom": "^19.2.2",
         "dotenv": "^17.2.3",
         "typescript": "^5.9.3"
     }
