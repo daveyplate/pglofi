@@ -241,57 +241,63 @@ export function useStaleEntities<
         return ["pglofi:stale-entities", entries] as const
     }, [staleEntities])
 
-    useSWR(staleQueryKey, async ([, entries]) => {
-        await Promise.all(
-            entries.map(async ({ table, ids }) => {
-                if (ids.length === 0) return
+    useSWR(
+        staleQueryKey,
+        async ([, entries]) => {
+            await Promise.all(
+                entries.map(async ({ table, ids }) => {
+                    if (ids.length === 0) return
 
-                const postgrest = getPostgrest()
+                    const postgrest = getPostgrest()
 
-                const { data, error } = await postgrest
-                    .from(table)
-                    .select("*")
-                    .in("id", ids)
+                    const { data, error } = await postgrest
+                        .from(table)
+                        .select("*")
+                        .in("id", ids)
 
-                if (error) throw error
+                    if (error) throw error
 
-                const drizzleTable = Object.values(schema).find(
-                    (t) => getTableName(t) === table
-                )
-
-                const transformedData = drizzleTable
-                    ? transformSqlRowsToTs(drizzleTable, data)
-                    : data
-
-                if (transformedData.length > 0) {
-                    pushToPullStream(table, transformedData)
-                }
-
-                const missingEntities = ids
-                    .filter(
-                        (entityId) =>
-                            !transformedData.find(
-                                (row) =>
-                                    String(
-                                        (row as Record<string, unknown>).id
-                                    ) === entityId
-                            )
+                    const drizzleTable = Object.values(schema).find(
+                        (t) => getTableName(t) === table
                     )
-                    .map((entityId) => tableCollections[table].get(entityId))
-                    .filter(Boolean)
 
-                if (missingEntities.length > 0) {
-                    pushToPullStream(
-                        table,
-                        missingEntities.map((entity) => ({
-                            ...entity,
-                            _deleted: true
-                        }))
-                    )
-                }
-            })
-        )
+                    const transformedData = drizzleTable
+                        ? transformSqlRowsToTs(drizzleTable, data)
+                        : data
 
-        return null
-    })
+                    if (transformedData.length > 0) {
+                        pushToPullStream(table, transformedData)
+                    }
+
+                    const missingEntities = ids
+                        .filter(
+                            (entityId) =>
+                                !transformedData.find(
+                                    (row) =>
+                                        String(
+                                            (row as Record<string, unknown>).id
+                                        ) === entityId
+                                )
+                        )
+                        .map((entityId) =>
+                            tableCollections[table].get(entityId)
+                        )
+                        .filter(Boolean)
+
+                    if (missingEntities.length > 0) {
+                        pushToPullStream(
+                            table,
+                            missingEntities.map((entity) => ({
+                                ...entity,
+                                _deleted: true
+                            }))
+                        )
+                    }
+                })
+            )
+
+            return null
+        },
+        { focusThrottleInterval: 30000 }
+    )
 }

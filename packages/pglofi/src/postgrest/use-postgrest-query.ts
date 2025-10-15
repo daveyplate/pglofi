@@ -55,6 +55,7 @@ export function usePostgrestQuery<
                   )
 
                   return transformedData as TQueryResult[]
-              }
+              },
+        { focusThrottleInterval: 30000 }
     )
 }

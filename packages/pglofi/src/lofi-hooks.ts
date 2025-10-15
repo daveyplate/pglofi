@@ -18,6 +18,7 @@ export interface UseLofiQueryResult<
     data: InferQueryResult<TSchema, TTableKey, TQuery>[] | undefined
     remoteData: InferQueryResult<TSchema, TTableKey, TQuery>[] | undefined
     isLoading: boolean
+    isLoadingRemote: boolean
     error: Error | null
     refetch: () => Promise<void>
 }
@@ -30,6 +31,7 @@ export interface UseLofiQueryOneResult<
     data: InferQueryResult<TSchema, TTableKey, TQuery> | undefined
     remoteData: InferQueryResult<TSchema, TTableKey, TQuery> | undefined
     isLoading: boolean
+    isLoadingRemote: boolean
     error: Error | null
     refetch: () => Promise<void>
 }
@@ -92,6 +94,7 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             data,
             remoteData,
             isLoading: data?.length === 0 && (isLoading || pgLoading),
+            isLoadingRemote: isLoading || pgLoading,
             error,
             refetch
         }
@@ -118,6 +121,7 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             data: result.data?.[0],
             remoteData: result.remoteData?.[0],
             isLoading: result.isLoading,
+            isLoadingRemote: result.isLoadingRemote,
             error: result.error,
             refetch: result.refetch
         }
