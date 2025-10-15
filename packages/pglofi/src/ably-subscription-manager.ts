@@ -54,7 +54,7 @@ class AblySubscriptionManager {
                 const handleMessage = async (message: Ably.Message) => {
                     try {
                         const rawEntityId = message.extras?.headers?.id
-                        const updatedAt = message.extras?.headers?.updatedAt
+                        const xmin = message.extras?.headers?.xmin
                         const messageName = message.name
 
                         if (!rawEntityId) {
@@ -110,7 +110,7 @@ class AblySubscriptionManager {
                             if (!messageData) {
                                 const { data, error } = await postgrest
                                     .from(tableName)
-                                    .select("*")
+                                    .select("*,xmin")
                                     .eq("id", entityId)
                                     .maybeSingle()
 
@@ -152,13 +152,9 @@ class AblySubscriptionManager {
                         const firstDocument = foundDocuments[0]
                         const docData = firstDocument.toJSON()
 
-                        // Check if local data is newer
-                        if (
-                            updatedAt &&
-                            docData.updatedAt &&
-                            new Date(docData.updatedAt).getTime() >
-                                new Date(updatedAt).getTime()
-                        ) {
+                        // Check if we already have this exact version by comparing xmin
+                        if (xmin && docData.xmin && docData.xmin === xmin) {
+                            // Skip if we already have this exact version
                             return
                         }
 
@@ -168,7 +164,7 @@ class AblySubscriptionManager {
                         if (!messageData) {
                             const { data, error } = await postgrest
                                 .from(tableName)
-                                .select("*")
+                                .select("*,xmin")
                                 .eq("id", entityId)
                                 .maybeSingle()
 

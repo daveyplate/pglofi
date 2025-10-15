@@ -63,7 +63,6 @@ function extractRelatedDocs<TSchema extends Record<string, AnyPgTable>>(
 
 /**
  * Pushes documents to RxDB pullStream, filtering out stale updates.
- * Only documents with updatedAt greater than existing documents are pushed.
  * @param tableName - The name of the table/collection
  * @param rows - Array of documents to push
  * @throws Error if pullStream operations fail
@@ -92,19 +91,7 @@ export async function pushToPullStream(
         const rowId = String(row.id)
         const existingDoc = existingDocs.find((doc) => doc.id === rowId)
 
-        if (!existingDoc) {
-            return true
-        }
-
-        if (existingDoc._deleted) {
-            return false
-        }
-
-        if (existingDoc.isPending) {
-            return false
-        }
-
-        if (existingDoc.updatedAt === row.updatedAt && !row._deleted) {
+        if (existingDoc?._deleted || existingDoc?.isPending) {
             return false
         }
 

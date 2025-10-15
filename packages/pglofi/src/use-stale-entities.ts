@@ -252,7 +252,7 @@ export function useStaleEntities<
 
                     const { data, error } = await postgrest
                         .from(table)
-                        .select("*")
+                        .select("*,xmin")
                         .in("id", ids)
 
                     if (error) throw error

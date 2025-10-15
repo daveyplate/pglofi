@@ -103,10 +103,17 @@ BEGIN
     -- Primary channel (for UPDATE and DELETE)
     SELECT 
       format('%s:id:%s', TG_TABLE_NAME, record_data.id::text) AS channel,
-      jsonb_build_object(
-        'id', record_data.id::text, 
-        'updatedAt', record_data."updatedAt"
-      ) AS headers
+      CASE 
+        WHEN TG_OP = 'UPDATE' THEN
+          jsonb_build_object(
+            'id', record_data.id::text,
+            'xmin', NEW.xmin::text
+          )
+        ELSE
+          jsonb_build_object(
+            'id', record_data.id::text
+          )
+      END AS headers
     WHERE TG_OP IN ('UPDATE', 'DELETE')
     
     UNION ALL
@@ -114,11 +121,19 @@ BEGIN
     -- Foreign key channels for current values (INSERT, UPDATE, DELETE)
     SELECT 
       format('%s:%s:%s', TG_TABLE_NAME, fk.column_name, fk.column_value) AS channel,
-      jsonb_build_object(
-        'id', record_data.id::text,
-        'updatedAt', record_data."updatedAt",
-        fk.column_name, fk.column_value
-      ) AS headers
+      CASE 
+        WHEN TG_OP = 'UPDATE' THEN
+          jsonb_build_object(
+            'id', record_data.id::text,
+            'xmin', NEW.xmin::text,
+            fk.column_name, fk.column_value
+          )
+        ELSE
+          jsonb_build_object(
+            'id', record_data.id::text,
+            fk.column_name, fk.column_value
+          )
+      END AS headers
     FROM (
       SELECT 
         kcu.column_name
@@ -144,7 +159,7 @@ BEGIN
       format('%s:%s:%s', TG_TABLE_NAME, fk.column_name, fk.old_value) AS channel,
       jsonb_build_object(
         'id', NEW.id::text,
-        'updatedAt', NEW."updatedAt",
+        'xmin', NEW.xmin::text,
         fk.column_name || '_old', fk.old_value,
         fk.column_name || '_new', fk.new_value
       ) AS headers

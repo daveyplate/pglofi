@@ -175,7 +175,8 @@ async function createDatabase({
                 primaryKey: "id",
                 properties: {
                     id: { type: "string", maxLength: 100 },
-                    isPending: { type: "boolean" }
+                    isPending: { type: "boolean" },
+                    xmin: { type: "string" }
                 },
                 required: ["id"]
             }
@@ -337,7 +338,7 @@ async function createDatabase({
                                     .from(tableName)
                                     .update(sqlUpdate)
                                     .eq("id", changeRow.newDocumentState.id)
-                                    .select()
+                                    .select("*,xmin")
 
                                 if (error) {
                                     console.error({ error })
@@ -377,7 +378,7 @@ async function createDatabase({
                                     .upsert(sqlInsert, {
                                         onConflict: "id"
                                     })
-                                    .select()
+                                    .select("*,xmin")
 
                                 if (error) {
                                     console.error({ error })

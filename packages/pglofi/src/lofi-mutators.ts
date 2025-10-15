@@ -124,7 +124,6 @@ export function createLofiMutators<TSchema extends Record<string, AnyPgTable>>(
 
         tableCollections[tableName].update(id, (draft) => {
             merge(draft, {
-                updatedAt: new Date().toISOString(),
                 ...sanitizedFields,
                 isPending: true
             })
