@@ -148,7 +148,9 @@ async function createDatabase({
     }
 
     const db = await createRxDatabase({
-        name: name ?? window.location.hostname,
+        name:
+            name ??
+            window.location.hostname.replace(/[^a-z0-9]/gi, "_").toLowerCase(),
         storage: wrappedValidateAjvStorage({
             storage: (storage === "localstorage"
                 ? getRxStorageLocalstorage()
