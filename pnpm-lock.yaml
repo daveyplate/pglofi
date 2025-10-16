@@ -305,14 +305,14 @@ importers:
         specifier: ^2.75.0
         version: 2.75.0
       '@tanstack/db':
-        specifier: ^0.4.10
-        version: 0.4.10(typescript@5.9.3)
+        specifier: ^0.4.11
+        version: 0.4.11(typescript@5.9.3)
       '@tanstack/react-db':
-        specifier: ^0.1.32
-        version: 0.1.32(react@19.2.0)(typescript@5.9.3)
+        specifier: ^0.1.33
+        version: 0.1.33(react@19.2.0)(typescript@5.9.3)
       '@tanstack/rxdb-db-collection':
-        specifier: ^0.1.21
-        version: 0.1.21(rxdb@16.19.1(rxjs@7.8.2))(rxjs@7.8.2)(typescript@5.9.3)
+        specifier: ^0.1.22
+        version: 0.1.22(rxdb@16.19.1(rxjs@7.8.2))(rxjs@7.8.2)(typescript@5.9.3)
       ably:
         specifier: ^2.14.0
         version: 2.14.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -357,8 +357,8 @@ importers:
         specifier: ^4.17.20
         version: 4.17.20
       '@types/node':
-        specifier: ^24.7.2
-        version: 24.7.2
+        specifier: ^24.8.0
+        version: 24.8.0
       '@types/react':
         specifier: ^19.2.2
         version: 19.2.2
@@ -2542,8 +2542,8 @@ packages:
     peerDependencies:
       typescript: '>=4.7'
 
-  '@tanstack/db@0.4.10':
-    resolution: {integrity: sha512-I4gTlzO9zgY+qUl1GqoAtUsoyPr+HNTdq3/rbL3znx8pxlUJTGA78WxrEmxTJtzCyfQoUwTwM5JYIMJnz2IFcQ==}
+  '@tanstack/db@0.4.11':
+    resolution: {integrity: sha512-xFK2ltAqpoW4Nr30cSNFXI40ILy9jWrcg3l3od4vUuG0O/Xhc5B5rcwGNMKvKOGS8LN1E0kyFHgMTC/mRKigtQ==}
     peerDependencies:
       typescript: '>=4.7'
 
@@ -2569,8 +2569,8 @@ packages:
     peerDependencies:
       react: '>=16.8.0'
 
-  '@tanstack/react-db@0.1.32':
-    resolution: {integrity: sha512-XSWeR8nOQW2uvf/vTaGcSz9zw6UFRv7jPiznZDDg5y/u627upLEJz/rrJZl2is+EikQDErUD1pMqDyu945w9Ew==}
+  '@tanstack/react-db@0.1.33':
+    resolution: {integrity: sha512-xsxNFTV8TuSuOMDT8/sbXa2GP2m7MZEryWsS1m8a/22APDQsacSq/IiPrSO08R09w1CRzuQ05TkxhZrYZH0ROA==}
     peerDependencies:
       react: '>=16.8.0'
 
@@ -2591,8 +2591,8 @@ packages:
       rxjs: '>=7.8.2'
       typescript: '>=4.7'
 
-  '@tanstack/rxdb-db-collection@0.1.21':
-    resolution: {integrity: sha512-HR8UtY35p47mnRc8Lg8lGb00VS+kn0niz7Yc4bxfuXYiTn/hZL3NzELbKB46arNnBLOpouj2tHSLI89yv+ijLQ==}
+  '@tanstack/rxdb-db-collection@0.1.22':
+    resolution: {integrity: sha512-9GBiR29fDY3E/Kn5aIp/xLv1hnkPBYmmpp6ttAWFQJCrFFYvsgRZGvlF5bUbrSUpprh1oDmycYjtBL/E3Ch87g==}
     peerDependencies:
       rxdb: '>=16.17.2'
       rxjs: '>=7.8.2'
@@ -2691,6 +2691,9 @@ packages:
 
   '@types/node@24.7.2':
     resolution: {integrity: sha512-/NbVmcGTP+lj5oa4yiYxxeBjRivKQ5Ns1eSZeB99ExsEQ6rX5XYU1Zy/gGxY/ilqtD4Etx9mKyrPxZRetiahhA==}
+
+  '@types/node@24.8.0':
+    resolution: {integrity: sha512-5x08bUtU8hfboMTrJ7mEO4CpepS9yBwAqcL52y86SWNmbPX8LVbNs3EP4cNrIZgdjk2NAlP2ahNihozpoZIxSg==}
 
   '@types/pg@8.15.5':
     resolution: {integrity: sha512-LF7lF6zWEKxuT3/OR8wAZGzkg4ENGXFNyiV/JeOt9z5B+0ZVwbql9McqX5c/WStFq1GaGso7H1AzP/qSzmlCKQ==}
@@ -5912,7 +5915,7 @@ snapshots:
   '@grpc/grpc-js@1.9.15':
     dependencies:
       '@grpc/proto-loader': 0.7.15
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@grpc/proto-loader@0.7.15':
     dependencies:
@@ -7306,7 +7309,7 @@ snapshots:
       sorted-btree: 1.8.1
       typescript: 5.9.3
 
-  '@tanstack/db@0.4.10(typescript@5.9.3)':
+  '@tanstack/db@0.4.11(typescript@5.9.3)':
     dependencies:
       '@standard-schema/spec': 1.0.0
       '@tanstack/db-ivm': 0.1.11(typescript@5.9.3)
@@ -7337,9 +7340,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@tanstack/react-db@0.1.32(react@19.2.0)(typescript@5.9.3)':
+  '@tanstack/react-db@0.1.33(react@19.2.0)(typescript@5.9.3)':
     dependencies:
-      '@tanstack/db': 0.4.10(typescript@5.9.3)
+      '@tanstack/db': 0.4.11(typescript@5.9.3)
       react: 19.2.0
       use-sync-external-store: 1.6.0(react@19.2.0)
     transitivePeerDependencies:
@@ -7367,10 +7370,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@tanstack/rxdb-db-collection@0.1.21(rxdb@16.19.1(rxjs@7.8.2))(rxjs@7.8.2)(typescript@5.9.3)':
+  '@tanstack/rxdb-db-collection@0.1.22(rxdb@16.19.1(rxjs@7.8.2))(rxjs@7.8.2)(typescript@5.9.3)':
     dependencies:
       '@standard-schema/spec': 1.0.0
-      '@tanstack/db': 0.4.10(typescript@5.9.3)
+      '@tanstack/db': 0.4.11(typescript@5.9.3)
       '@tanstack/store': 0.8.0
       debug: 4.4.3
       rxdb: 16.19.1(rxjs@7.8.2)
@@ -7429,13 +7432,13 @@ snapshots:
   '@types/body-parser@1.19.6':
     dependencies:
       '@types/connect': 3.4.38
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/cacheable-request@6.0.3':
     dependencies:
       '@types/http-cache-semantics': 4.0.4
       '@types/keyv': 3.1.4
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
       '@types/responselike': 1.0.3
 
   '@types/clone@2.1.4': {}
@@ -7444,11 +7447,11 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/cors@2.8.19':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/debug@4.1.12':
     dependencies:
@@ -7456,7 +7459,7 @@ snapshots:
 
   '@types/express-serve-static-core@5.1.0':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
       '@types/qs': 6.14.0
       '@types/range-parser': 1.2.7
       '@types/send': 1.2.0
@@ -7475,7 +7478,7 @@ snapshots:
 
   '@types/keyv@3.1.4':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/lodash@4.17.20': {}
 
@@ -7492,6 +7495,10 @@ snapshots:
       undici-types: 7.14.0
 
   '@types/node@24.7.2':
+    dependencies:
+      undici-types: 7.14.0
+
+  '@types/node@24.8.0':
     dependencies:
       undici-types: 7.14.0
 
@@ -7528,26 +7535,26 @@ snapshots:
 
   '@types/responselike@1.0.3':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/send@0.17.5':
     dependencies:
       '@types/mime': 1.3.5
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/send@1.2.0':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/serve-static@1.15.9':
     dependencies:
       '@types/http-errors': 2.0.5
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
       '@types/send': 0.17.5
 
   '@types/simple-peer@9.11.8':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@types/webidl-conversions@7.0.3': {}
 
@@ -7557,7 +7564,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
 
   '@uidotdev/usehooks@2.4.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)':
     dependencies:
@@ -8811,7 +8818,7 @@ snapshots:
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
       '@protobufjs/utf8': 1.1.0
-      '@types/node': 24.7.2
+      '@types/node': 24.8.0
       long: 5.3.2
 
   pump@3.0.3:
