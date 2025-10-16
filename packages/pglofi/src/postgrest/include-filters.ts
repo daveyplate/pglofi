@@ -38,17 +38,19 @@ export function applyPostgrestFilters<
         )
     }
 
-    // Apply sort
-    if (config.sort) {
-        const orders = normalizeSortConfig(config.sort, table)
-        for (const { column, ascending } of orders) {
-            builder = relationName
-                ? builder.order(column, {
-                      referencedTable: relationName,
-                      ascending
-                  })
-                : builder.order(column, { ascending })
-        }
+    // Apply sort, defaulting to 'id asc' if no explicit sort is provided
+    const hasExplicitSort = config.sort !== undefined
+    const orders = hasExplicitSort
+        ? normalizeSortConfig(config.sort!, table)
+        : [{ column: "id", ascending: true, stringSort: undefined }]
+
+    for (const { column, ascending } of orders) {
+        builder = relationName
+            ? builder.order(column, {
+                  referencedTable: relationName,
+                  ascending
+              })
+            : builder.order(column, { ascending })
     }
 
     // Apply limit and/or skip

@@ -276,10 +276,10 @@ export function applySortLimitSkip<
 
     const hasExplicitSort = query?.sort !== undefined
 
-    // Always apply sort, defaulting to 'createdAt asc' if no explicit sort is provided
+    // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
     const orders = hasExplicitSort
         ? normalizeSortConfig(query.sort!, parentTable)
-        : [{ column: "createdAt", ascending: true }]
+        : [{ column: "id", ascending: true }]
 
     for (const { column, ascending, stringSort } of orders) {
         currentQuery = (
@@ -604,10 +604,8 @@ export function flatToHierarchical<
 
                 const hasExplicitSort = config.sort !== undefined
 
-                // Always apply sort, defaulting to 'createdAt asc' if no explicit sort is provided
-                const sortToApply = hasExplicitSort
-                    ? config.sort!
-                    : ["createdAt"]
+                // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
+                const sortToApply = hasExplicitSort ? config.sort! : ["id"]
                 const relatedTable = schema[config.from as keyof TSchema]
                 relationArray = applySortToArray(
                     relationArray,
