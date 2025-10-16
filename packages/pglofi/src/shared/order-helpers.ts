@@ -37,17 +37,22 @@ function getStringSortStrategy(
  * Handles array of strings or array of objects.
  *
  * This is a shared utility used by both usePostgrestQuery and useLocalQuery.
+ *
+ * @param ensureIdSort - If true, ensures 'id asc' is appended as a secondary sort key
+ *                       unless 'id' is already specified. This ensures stable ordering
+ *                       for pagination when sorting by non-unique fields.
  */
 export function normalizeSortConfig<TTable extends AnyPgTable>(
     sortConfig: SortConfig<TTable>,
-    table?: AnyPgTable
+    table?: AnyPgTable,
+    ensureIdSort = false
 ): Array<{
     column: string
     ascending: boolean
     stringSort?: "lexical" | "locale"
 }> {
     // SortConfig is always an array in Mango Query format
-    return sortConfig.flatMap((sortItem) => {
+    const normalized = sortConfig.flatMap((sortItem) => {
         if (typeof sortItem === "string") {
             // String format: ["createdAt", "name"] - defaults to ascending
             const sqlColumn = table ? tsToSqlColumn(table, sortItem) : sortItem
@@ -72,4 +77,18 @@ export function normalizeSortConfig<TTable extends AnyPgTable>(
             }
         })
     })
+
+    // Ensure 'id' is included as a secondary sort key for stable ordering
+    if (ensureIdSort) {
+        const hasIdSort = normalized.some((order) => order.column === "id")
+        if (!hasIdSort) {
+            normalized.push({
+                column: "id",
+                ascending: true,
+                stringSort: undefined
+            })
+        }
+    }
+
+    return normalized
 }

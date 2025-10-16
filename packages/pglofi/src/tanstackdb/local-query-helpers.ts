@@ -187,13 +187,14 @@ function buildSelectorExpression(
 /**
  * Applies sorting to an array of records based on sort configuration.
  * Handles multiple sort keys, null/undefined values, and string sorting strategies.
+ * Always ensures 'id' is included as a secondary sort key for stable ordering.
  */
 function applySortToArray<T extends TableRecord>(
     records: T[],
     sortConfig: SortConfig<AnyPgTable>,
     table?: AnyPgTable
 ): T[] {
-    const orders = normalizeSortConfig(sortConfig, table)
+    const orders = normalizeSortConfig(sortConfig, table, true)
     const sorted = [...records]
 
     sorted.sort((a, b) => {
@@ -277,8 +278,9 @@ export function applySortLimitSkip<
     const hasExplicitSort = query?.sort !== undefined
 
     // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
+    // Always ensure 'id' is included as a secondary sort key for stable ordering
     const orders = hasExplicitSort
-        ? normalizeSortConfig(query.sort!, parentTable)
+        ? normalizeSortConfig(query.sort!, parentTable, true)
         : [{ column: "id", ascending: true }]
 
     for (const { column, ascending, stringSort } of orders) {
@@ -605,6 +607,7 @@ export function flatToHierarchical<
                 const hasExplicitSort = config.sort !== undefined
 
                 // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
+                // applySortToArray will ensure 'id' is included via normalizeSortConfig
                 const sortToApply = hasExplicitSort ? config.sort! : ["id"]
                 const relatedTable = schema[config.from as keyof TSchema]
                 relationArray = applySortToArray(

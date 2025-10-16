@@ -39,9 +39,10 @@ export function applyPostgrestFilters<
     }
 
     // Apply sort, defaulting to 'id asc' if no explicit sort is provided
+    // Always ensure 'id' is included as a secondary sort key for stable ordering
     const hasExplicitSort = config.sort !== undefined
     const orders = hasExplicitSort
-        ? normalizeSortConfig(config.sort!, table)
+        ? normalizeSortConfig(config.sort!, table, true)
         : [{ column: "id", ascending: true, stringSort: undefined }]
 
     for (const { column, ascending } of orders) {
