@@ -1,6 +1,8 @@
 import { type Collection, createCollection } from "@tanstack/react-db"
+import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
 import { useEffect, useSyncExternalStore } from "react"
 import {
     addRxPlugin,
@@ -19,13 +21,7 @@ import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { type Observable, Subject } from "rxjs"
-import { rxdbCollectionOptions } from "../rxdb-db-collection/rxdb"
 
-addRxPlugin(RxDBMigrationSchemaPlugin)
-addRxPlugin(RxDBQueryBuilderPlugin)
-addRxPlugin(RxDBLeaderElectionPlugin)
-
-import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
 import { getPostgrest } from "../postgrest/postgrest"
 import {
     transformSqlRowsToTs,
@@ -34,6 +30,10 @@ import {
 import { filterTableSchema } from "../shared/schema-helpers"
 import { notify, subscribe } from "../shared/subscriptions"
 import type { LofiConfig } from "./lofi-config"
+
+addRxPlugin(RxDBMigrationSchemaPlugin)
+addRxPlugin(RxDBQueryBuilderPlugin)
+addRxPlugin(RxDBLeaderElectionPlugin)
 
 type InternalLofiConfig = Omit<LofiConfig, "schema"> & {
     schema: Record<string, AnyPgTable>

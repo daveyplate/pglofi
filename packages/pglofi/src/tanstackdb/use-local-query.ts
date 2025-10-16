@@ -1,10 +1,10 @@
-import { createLiveQueryCollection } from "@tanstack/react-db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { useEffect, useMemo, useState } from "react"
+import { useMemo } from "react"
 import { tableCollections, useDb } from "../rxdb/rxdb"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
-import { buildLocalQuery, flatToHierarchical } from "./local-query-helpers"
+import { buildLocalQuery } from "./local-query-helpers"
+import { useLiveQuery } from "./useLiveQuery"
 
 export function useLocalQuery<
     TSchema extends Record<string, AnyPgTable>,
@@ -19,58 +19,32 @@ export function useLocalQuery<
 
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const db = useDb()
-    const [data, setData] = useState<TQueryResult[]>([])
-    const [isLoading, setIsLoading] = useState(true)
 
     // Serialize query for stable dependency comparison
     const queryKey = useMemo(() => JSON.stringify(query), [query])
 
-    // biome-ignore lint/correctness/useExhaustiveDependencies: schema and query are intentionally excluded (see comment below)
-    useEffect(() => {
-        if (!db || !tableName || !tableKey) return
+    const { data, isLoading, isReady } = useLiveQuery(
+        (q) => {
+            if (!db || !tableName || !tableKey) return null
 
-        const tableCollection = tableCollections[tableName]
+            const tableCollection = tableCollections[tableName]
 
-        // Build complete query (selector, joins, sort/limit/skip) in one pass
-        const parentAlias = tableName
-        const liveQueryCollection = createLiveQueryCollection({
-            startSync: true,
-            query: (q) => {
-                const baseQuery = q.from({ [parentAlias]: tableCollection })
-                return buildLocalQuery(
-                    schema,
-                    baseQuery,
-                    tableName,
-                    tableKey,
-                    parentAlias,
-                    query
-                    // biome-ignore lint/suspicious/noExplicitAny: Return type must match TanStack DB's QueryBuilder
-                ) as any
-            }
-        })
+            // Build complete query (selector, joins, sort/limit/skip) in one pass
+            const parentAlias = tableName
 
-        const updateData = () => {
-            const flatResults = liveQueryCollection.toArray
-            const hierarchicalData = flatToHierarchical(
+            const baseQuery = q.from({ [parentAlias]: tableCollection })
+            return buildLocalQuery(
                 schema,
-                flatResults,
+                baseQuery,
                 tableName,
                 tableKey,
                 parentAlias,
                 query
-            )
-            setData(hierarchicalData as TQueryResult[])
-        }
+                // biome-ignore lint/suspicious/noExplicitAny: Return type must match TanStack DB's QueryBuilder
+            ) as any
+        },
+        [tableName, tableKey, db, queryKey]
+    )
 
-        liveQueryCollection.onFirstReady(() => {
-            updateData()
-            setIsLoading(false)
-        })
-
-        liveQueryCollection.subscribeChanges(() => {
-            updateData()
-        })
-    }, [tableName, tableKey, db, queryKey])
-
-    return { data, isLoading }
+    return { data: data as TQueryResult[], isLoading: isLoading || !isReady }
 }
