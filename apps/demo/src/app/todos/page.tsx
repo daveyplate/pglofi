@@ -4,6 +4,7 @@ import { useAuthenticate } from "@daveyplate/better-auth-ui"
 import { useThrottle } from "@uidotdev/usehooks"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Todo } from "@/database/schema"
@@ -52,11 +53,11 @@ export default function TodosPage() {
                     name="task"
                     placeholder="Add a todo"
                     autoComplete="off"
-                    disabled={isLoading}
+                    disabled={!user}
                     required
                 />
 
-                <Button disabled={isLoading}>
+                <Button disabled={!user}>
                     <PlusIcon />
                     Add
                 </Button>
@@ -67,23 +68,21 @@ export default function TodosPage() {
                 name="task"
                 placeholder="Search todos"
                 autoComplete="off"
-                disabled={isLoading}
+                disabled={!user}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
             />
 
             <div className="flex flex-col gap-4">
-                {isLoading &&
+                {isLoading ? (
                     [...Array(3)].map((_, index) => (
                         <TodoSkeleton key={index} />
-                    ))}
-
-                {!isLoading && todos?.length === 0 && <p>No todos</p>}
-
-                {!isLoading &&
-                    todos?.map((todo) => (
-                        <TodoItem key={todo.id} todo={todo} />
-                    ))}
+                    ))
+                ) : todos?.length === 0 ? (
+                    <p>No todos</p>
+                ) : (
+                    todos?.map((todo) => <TodoItem key={todo.id} todo={todo} />)
+                )}
             </div>
         </main>
     )
