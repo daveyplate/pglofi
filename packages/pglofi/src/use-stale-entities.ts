@@ -233,9 +233,7 @@ export function useStaleEntities<
 
         // if we haev any stale entities, log it
         if (Object.keys(nextStaleEntities).length > 0) {
-            console.log("nextStaleEntities", nextStaleEntities)
-        } else {
-            console.log("no stale entities")
+            console.log("staleEntities", nextStaleEntities)
         }
 
         setStaleEntities(nextStaleEntities)

@@ -93,7 +93,7 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
         return {
             data,
             remoteData,
-            isLoading: data?.length === 0 && (isLoading || pgLoading),
+            isLoading: !data?.length && (isLoading || pgLoading),
             isLoadingRemote: isLoading || pgLoading,
             error,
             refetch

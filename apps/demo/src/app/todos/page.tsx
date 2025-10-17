@@ -1,28 +1,27 @@
 "use client"
 
+import { useAuthenticate } from "@daveyplate/better-auth-ui"
 import { useThrottle } from "@uidotdev/usehooks"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Todo } from "@/database/schema"
-import { authClient } from "@/lib/auth-client"
 import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
 import TodoItem from "./todo-item"
 import TodoSkeleton from "./todo-skeleton"
 
 export default function TodosPage() {
-    const { data: sessionData } = authClient.useSession()
+    const { user } = useAuthenticate()
     const [q, setQ] = useState("")
     const throttledQ = useThrottle(q, 300)
 
-    const { data: todos, isLoading } = lofi.useQuery(sessionData && "todos", {
+    const { data: todos, isLoading } = lofi.useQuery(user && "todos", {
         include: { user: "profiles" },
         selector: {
             task: { $ilike: `%${throttledQ}%` },
-            userId: sessionData?.user.id
+            userId: user?.id
         },
         sort: [{ createdAt: "desc" }]
     })
@@ -39,28 +38,27 @@ export default function TodosPage() {
     //     }
     // })
 
-    const insertTodo = (todo: Todo) => lofi.insert("todos", todo)
+    const insertTodo = (todo: Todo) => {
+        lofi.insert("todos", todo)
+    }
 
     return (
         <main className="container mx-auto flex flex-col gap-4 p-safe-or-4 md:p-safe-or-6">
             <form action={handleAction(insertTodo)} className="flex gap-3">
-                <Input
-                    type="hidden"
-                    name="userId"
-                    value={sessionData?.user.id}
-                />
+                <Input type="hidden" name="userId" defaultValue={user?.id} />
 
                 <Input
                     type="text"
                     name="task"
                     placeholder="Add a todo"
                     autoComplete="off"
-                    disabled={!sessionData}
+                    disabled={isLoading}
                     required
                 />
 
-                <Button disabled={!sessionData}>
+                <Button disabled={isLoading}>
                     <PlusIcon />
+                    Add
                 </Button>
             </form>
 
@@ -69,7 +67,7 @@ export default function TodosPage() {
                 name="task"
                 placeholder="Search todos"
                 autoComplete="off"
-                disabled={!sessionData}
+                disabled={isLoading}
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
             />
