@@ -315,7 +315,7 @@ async function createDatabase({
 
                                 if (onPushError) {
                                     onPushError({
-                                        tableName,
+                                        table: tableName,
                                         operation: "delete",
                                         document: changeRow.newDocumentState,
                                         error
@@ -355,7 +355,7 @@ async function createDatabase({
 
                                     if (onPushError) {
                                         onPushError({
-                                            tableName,
+                                            table: tableName,
                                             operation: "update",
                                             document:
                                                 changeRow.newDocumentState,
@@ -405,7 +405,7 @@ async function createDatabase({
 
                                     if (onPushError) {
                                         onPushError({
-                                            tableName,
+                                            table: tableName,
                                             operation: "insert",
                                             document:
                                                 changeRow.newDocumentState,

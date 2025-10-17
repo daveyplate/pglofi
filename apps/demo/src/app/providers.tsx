@@ -24,25 +24,25 @@ export function Providers({ children }: { children: ReactNode }) {
         sync: "ably",
         version: 0,
         migrationStrategy: async (
-            tableName,
+            table,
             version,
             oldDocumentData,
             collection
         ) => {
             return oldDocumentData
         },
-        onPushError({ operation, tableName, error }) {
+        onPushError({ operation, table, error }) {
             console.error(error)
 
             switch (operation) {
                 case "delete":
-                    toast.error(`Failed to delete from ${tableName}`)
+                    toast.error(`Failed to delete from ${table}`)
                     break
                 case "insert":
-                    toast.error(`Failed to insert into ${tableName}`)
+                    toast.error(`Failed to insert into ${table}`)
                     break
                 case "update":
-                    toast.error(`Failed to update on ${tableName}`)
+                    toast.error(`Failed to update on ${table}`)
                     break
             }
         }

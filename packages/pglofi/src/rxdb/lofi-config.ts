@@ -13,13 +13,13 @@ export type LofiConfig = {
     ablyToken?: string
     version?: number
     migrationStrategy?: (
-        tableName: string,
+        table: string,
         version: number,
         oldDocumentData: Record<string, unknown>,
         collection: RxCollection
     ) => unknown
     onPushError?: (params: {
-        tableName: string
+        table: string
         operation: "delete" | "insert" | "update"
         document: Record<string, unknown>
         error: PostgrestError
