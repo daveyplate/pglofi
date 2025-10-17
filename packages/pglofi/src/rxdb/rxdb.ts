@@ -117,10 +117,23 @@ export async function initializeDb(userConfig: LofiConfig) {
         config.dbURL = process.env.NEXT_PUBLIC_NEON_DATA_API_URL
     }
 
+    if (config.devMode) {
+        await import("rxdb/plugins/dev-mode").then((module) =>
+            addRxPlugin(module.RxDBDevModePlugin)
+        )
+    }
+
+    lofiConfig = config
+
     // Check if config has changed
-    if (!isEqual(lofiConfig, config)) {
+    if (
+        lofiConfig?.name !== config.name ||
+        !isEqual(lofiConfig?.schema, config.schema) ||
+        lofiConfig?.storage !== config.storage ||
+        lofiConfig?.version !== config.version ||
+        !isEqual(lofiConfig?.migrationStrategy, config.migrationStrategy)
+    ) {
         await destroyDatabase()
-        lofiConfig = config
         notify("lofi:config", config)
     }
 
@@ -142,12 +155,6 @@ async function createDatabase({
     migrationStrategy,
     onPushError
 }: InternalLofiConfig): Promise<RxDatabase> {
-    if (devMode) {
-        await import("rxdb/plugins/dev-mode").then((module) =>
-            addRxPlugin(module.RxDBDevModePlugin)
-        )
-    }
-
     const db = await createRxDatabase({
         name:
             name ??
