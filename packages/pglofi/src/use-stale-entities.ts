@@ -37,10 +37,21 @@ export function useStaleEntities<
         Record<string, Array<Record<string, unknown>>>
     >({})
 
+    const [delayedRemoteData, setDelayedRemoteData] = useState(remoteData)
+
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDelayedRemoteData(remoteData)
+        })
+
+        return () => clearTimeout(timeout)
+    }, [remoteData])
+
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
     useEffect(() => {
+        const remoteData = delayedRemoteData
         if (!remoteData || !data || isValidating || !tableName) return
 
         // Helper to strip includes from an entity
@@ -220,8 +231,15 @@ export function useStaleEntities<
             }
         }
 
+        // if we haev any stale entities, log it
+        if (Object.keys(nextStaleEntities).length > 0) {
+            console.log("nextStaleEntities", nextStaleEntities)
+        } else {
+            console.log("no stale entities")
+        }
+
         setStaleEntities(nextStaleEntities)
-    }, [remoteData, isValidating])
+    }, [delayedRemoteData])
 
     const staleQueryKey = useMemo(() => {
         const entries = Object.entries(staleEntities)
