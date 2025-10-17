@@ -6,7 +6,9 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import type { Todo } from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
+import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
 import TodoItem from "./todo-item"
 import TodoSkeleton from "./todo-skeleton"
@@ -37,18 +39,17 @@ export default function TodosPage() {
     //     }
     // })
 
-    const formAction = (formData: FormData) => {
-        const todo = Object.fromEntries(formData.entries())
-
-        lofi.insert("todos", {
-            ...todo,
-            userId: sessionData!.user.id
-        })
-    }
+    const insertTodo = (todo: Todo) => lofi.insert("todos", todo)
 
     return (
         <main className="container mx-auto flex flex-col gap-4 p-safe-or-4 md:p-safe-or-6">
-            <form action={formAction} className="flex gap-3">
+            <form action={handleAction(insertTodo)} className="flex gap-3">
+                <Input
+                    type="hidden"
+                    name="userId"
+                    value={sessionData?.user.id}
+                />
+
                 <Input
                     type="text"
                     name="task"
