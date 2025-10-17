@@ -2,7 +2,6 @@
 
 import { AuthUIProvider } from "@daveyplate/better-auth-ui"
 import { useInitializeDb } from "@daveyplate/pglofi"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ThemeProvider } from "next-themes"
@@ -11,8 +10,6 @@ import { Toaster } from "sonner"
 
 import * as schema from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
-
-export const queryClient = new QueryClient()
 
 export function Providers({ children }: { children: ReactNode }) {
     const router = useRouter()
@@ -37,29 +34,27 @@ export function Providers({ children }: { children: ReactNode }) {
     })
 
     return (
-        <QueryClientProvider client={queryClient}>
-            <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+        >
+            <AuthUIProvider
+                authClient={authClient}
+                multiSession
+                navigate={router.push}
+                replace={router.replace}
+                onSessionChange={() => {
+                    // Clear router cache (protected routes)
+                    router.refresh()
+                }}
+                Link={Link}
             >
-                <AuthUIProvider
-                    authClient={authClient}
-                    multiSession
-                    navigate={router.push}
-                    replace={router.replace}
-                    onSessionChange={() => {
-                        // Clear router cache (protected routes)
-                        router.refresh()
-                    }}
-                    Link={Link}
-                >
-                    {children}
+                {children}
 
-                    <Toaster />
-                </AuthUIProvider>
-            </ThemeProvider>
-        </QueryClientProvider>
+                <Toaster />
+            </AuthUIProvider>
+        </ThemeProvider>
     )
 }

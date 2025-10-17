@@ -29,7 +29,6 @@
         "@tanstack/react-db": "^0.1.33",
         "@tanstack/rxdb-db-collection": "^0.1.22",
         "ably": "^2.14.0",
-        "debug": "^4.4.3",
         "drizzle-orm": "^0.44.6",
         "lodash": "^4.17.21",
         "nanostores": "^1.0.1",
@@ -42,7 +41,6 @@
     },
     "devDependencies": {
         "@biomejs/biome": "2.2.6",
-        "@types/debug": "^4.1.12",
         "@types/lodash": "^4.17.20",
         "@types/node": "^24.8.0",
         "@types/react": "^19.2.2",
