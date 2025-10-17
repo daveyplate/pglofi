@@ -3,7 +3,7 @@ import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useMemo } from "react"
 import { tableCollections, useDb } from "../rxdb/rxdb"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
-import { buildLocalQuery } from "./local-query-helpers"
+import { buildLocalQuery, flatToHierarchical } from "./local-query-helpers"
 import { useLiveQuery } from "./useLiveQuery"
 
 export function useLocalQuery<
@@ -46,5 +46,23 @@ export function useLocalQuery<
         [tableName, tableKey, db, queryKey]
     )
 
-    return { data: data as TQueryResult[], isLoading: isLoading || !isReady }
+    const hierarchicalData = useMemo(() => {
+        if (!data || !tableName || !tableKey) return undefined
+
+        const parentAlias = tableName
+
+        return flatToHierarchical(
+            schema,
+            data,
+            tableName,
+            tableKey,
+            parentAlias,
+            query
+        )
+    }, [data, schema, tableName, tableKey, query])
+
+    return {
+        data: hierarchicalData as TQueryResult[],
+        isLoading: isLoading || !isReady
+    }
 }
