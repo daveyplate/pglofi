@@ -2,7 +2,7 @@
 
 import { useThrottle } from "@uidotdev/usehooks"
 import { PlusIcon } from "lucide-react"
-import { type FormEvent, useState } from "react"
+import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,33 +37,25 @@ export default function TodosPage() {
     //     }
     // })
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        if (!sessionData) return
+    const formAction = (formData: FormData) => {
+        const todo = Object.fromEntries(formData.entries())
 
-        const form = e.currentTarget
-        const formData = new FormData(form)
-        const task = (formData.get("task") as string).trim()
-
-        if (!task) return
-
-        await lofi.insert("todos", {
-            task,
-            userId: sessionData.user.id
+        lofi.insert("todos", {
+            ...todo,
+            userId: sessionData!.user.id
         })
-
-        form.reset()
     }
 
     return (
         <main className="container mx-auto flex flex-col gap-4 p-safe-or-4 md:p-safe-or-6">
-            <form onSubmit={handleSubmit} className="flex gap-3">
+            <form action={formAction} className="flex gap-3">
                 <Input
                     type="text"
                     name="task"
                     placeholder="Add a todo"
                     autoComplete="off"
                     disabled={!sessionData}
+                    required
                 />
 
                 <Button disabled={!sessionData}>

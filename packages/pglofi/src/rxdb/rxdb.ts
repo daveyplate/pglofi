@@ -139,7 +139,8 @@ async function createDatabase({
     devMode,
     storage,
     version,
-    migrationStrategy
+    migrationStrategy,
+    onPushError
 }: InternalLofiConfig): Promise<RxDatabase> {
     if (devMode) {
         await import("rxdb/plugins/dev-mode").then((module) =>
@@ -310,9 +311,18 @@ async function createDatabase({
                                 .eq("id", changeRow.newDocumentState.id)
 
                             if (error) {
-                                console.error(error)
                                 if (!error.code) throw error
 
+                                if (onPushError) {
+                                    onPushError({
+                                        tableName,
+                                        operation: "delete",
+                                        document: changeRow.newDocumentState,
+                                        error
+                                    })
+                                } else {
+                                    console.error(error)
+                                }
                                 conflicts.push(changeRow.assumedMasterState)
                             }
                         } else {
@@ -341,9 +351,19 @@ async function createDatabase({
                                     .select("*,xmin")
 
                                 if (error) {
-                                    console.error({ error })
                                     if (!error.code) throw error
 
+                                    if (onPushError) {
+                                        onPushError({
+                                            tableName,
+                                            operation: "update",
+                                            document:
+                                                changeRow.newDocumentState,
+                                            error
+                                        })
+                                    } else {
+                                        console.error({ error })
+                                    }
                                     conflicts.push(changeRow.assumedMasterState)
 
                                     continue
@@ -381,10 +401,23 @@ async function createDatabase({
                                     .select("*,xmin")
 
                                 if (error) {
-                                    console.error({ error })
                                     if (!error.code) throw error
 
-                                    conflicts.push(changeRow.assumedMasterState)
+                                    if (onPushError) {
+                                        onPushError({
+                                            tableName,
+                                            operation: "insert",
+                                            document:
+                                                changeRow.newDocumentState,
+                                            error
+                                        })
+                                    } else {
+                                        console.error({ error })
+                                    }
+                                    conflicts.push({
+                                        ...changeRow.newDocumentState,
+                                        _deleted: true
+                                    })
 
                                     continue
                                 }

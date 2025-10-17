@@ -6,7 +6,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ThemeProvider } from "next-themes"
 import type { ReactNode } from "react"
-import { Toaster } from "sonner"
+import { Toaster, toast } from "sonner"
 
 import * as schema from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
@@ -30,6 +30,21 @@ export function Providers({ children }: { children: ReactNode }) {
             collection
         ) => {
             return oldDocumentData
+        },
+        onPushError({ operation, tableName, error }) {
+            console.error(error)
+
+            switch (operation) {
+                case "delete":
+                    toast.error(`Failed to delete from ${tableName}`)
+                    break
+                case "insert":
+                    toast.error(`Failed to insert into ${tableName}`)
+                    break
+                case "update":
+                    toast.error(`Failed to update on ${tableName}`)
+                    break
+            }
         }
     })
 
