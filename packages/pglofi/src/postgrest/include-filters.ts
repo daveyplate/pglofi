@@ -49,9 +49,10 @@ export function applyPostgrestFilters<
         builder = relationName
             ? builder.order(column, {
                   referencedTable: relationName,
-                  ascending
+                  ascending,
+                  nullsFirst: true
               })
-            : builder.order(column, { ascending })
+            : builder.order(column, { ascending, nullsFirst: true })
     }
 
     // Apply limit and/or skip
