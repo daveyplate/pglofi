@@ -73,11 +73,17 @@ function applyComparisonOperator(
 /**
  * Recursively builds selector expressions for TanStack DB.
  * Handles $and/$or/$not/$nor logical operators and basic column conditions.
+ * All conditions at the same level are combined with implicit AND.
  */
 function buildSelectorExpression(
     parentAlias: string,
     selectorConfig: SelectorConfig<AnyPgTable>
 ): (tables: Record<string, TableRecord>) => ConditionExpression {
+    // Collect all condition functions (logical operators + basic columns)
+    const allConditions: Array<
+        (tables: Record<string, TableRecord>) => ConditionExpression
+    > = []
+
     // Handle $and logical operator
     if (
         isLogicalOperator(selectorConfig) &&
@@ -87,12 +93,12 @@ function buildSelectorExpression(
         const conditions = selectorConfig.$and.map((subSelector) =>
             buildSelectorExpression(parentAlias, subSelector)
         )
-        return (tables: Record<string, TableRecord>) => {
+        allConditions.push((tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
             if (results.length === 0) return true
             if (results.length === 1) return results[0]
             return and(results[0], results[1], ...results.slice(2))
-        }
+        })
     }
 
     // Handle $or logical operator
@@ -104,12 +110,12 @@ function buildSelectorExpression(
         const conditions = selectorConfig.$or.map((subSelector) =>
             buildSelectorExpression(parentAlias, subSelector)
         )
-        return (tables: Record<string, TableRecord>) => {
+        allConditions.push((tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
             if (results.length === 0) return false
             if (results.length === 1) return results[0]
             return or(results[0], results[1], ...results.slice(2))
-        }
+        })
     }
 
     // Handle $not logical operator
@@ -122,10 +128,10 @@ function buildSelectorExpression(
             parentAlias,
             selectorConfig.$not
         )
-        return (tables: Record<string, TableRecord>) => {
+        allConditions.push((tables: Record<string, TableRecord>) => {
             const result = innerCondition(tables)
             return not(result)
-        }
+        })
     }
 
     // Handle $nor logical operator (NOT OR)
@@ -137,20 +143,17 @@ function buildSelectorExpression(
         const conditions = selectorConfig.$nor.map((subSelector) =>
             buildSelectorExpression(parentAlias, subSelector)
         )
-        return (tables: Record<string, TableRecord>) => {
+        allConditions.push((tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
             if (results.length === 0) return true
             if (results.length === 1) return not(results[0])
             // NOR is NOT(a OR b OR c...)
             return not(or(results[0], results[1], ...results.slice(2)))
-        }
+        })
     }
 
     // Handle basic column conditions
-    const columnConditions: Array<
-        (tables: Record<string, TableRecord>) => ConditionExpression
-    > = []
-
+    // These are combined with implicit AND with any logical operators above
     for (const [column, condition] of Object.entries(selectorConfig)) {
         if (
             column === "$and" ||
@@ -163,23 +166,23 @@ function buildSelectorExpression(
         const normalized = normalizeSelectorCondition(condition)
         const { operator, value } = getOperatorAndValue(normalized)
 
-        columnConditions.push((tables: Record<string, TableRecord>) => {
+        allConditions.push((tables: Record<string, TableRecord>) => {
             const table = tables[parentAlias]
             return applyComparisonOperator(table[column], operator, value)
         })
     }
 
-    if (columnConditions.length === 0) {
+    if (allConditions.length === 0) {
         return () => true as ConditionExpression
     }
 
-    if (columnConditions.length === 1) {
-        return columnConditions[0]
+    if (allConditions.length === 1) {
+        return allConditions[0]
     }
 
-    // Multiple conditions default to AND
+    // Multiple conditions default to AND (implicit AND between all conditions)
     return (tables: Record<string, TableRecord>) => {
-        const results = columnConditions.map((condFn) => condFn(tables))
+        const results = allConditions.map((condFn) => condFn(tables))
         return and(results[0], results[1], ...results.slice(2))
     }
 }

@@ -68,6 +68,7 @@ function applyOperator(
  * Applies selector conditions to a PostgREST query builder recursively.
  * Handles $and/$or/$not/$nor logical operators.
  * Converts TypeScript column names to SQL column names.
+ * All conditions at the same level are combined with implicit AND.
  */
 export function applySelectorConditions(
     // biome-ignore lint/suspicious/noExplicitAny: Supabase query builder type
@@ -92,7 +93,6 @@ export function applySelectorConditions(
                 table
             )
         }
-        return builder
     }
 
     // Handle $or logical operator
@@ -123,7 +123,6 @@ export function applySelectorConditions(
         if (conditions.length > 0) {
             builder = builder.or(conditions.join(","))
         }
-        return builder
     }
 
     // Handle $not logical operator (negates a single selector)
@@ -148,7 +147,6 @@ export function applySelectorConditions(
                 builder = builder.not(col, pgOperator, formattedValue)
             }
         }
-        return builder
     }
 
     // Handle $nor logical operator (NOR = NOT (a OR b))
@@ -181,7 +179,6 @@ export function applySelectorConditions(
             // Use NOT with OR to create NOR
             builder = builder.not("or", `(${conditions.join(",")})`, "")
         }
-        return builder
     }
 
     // Handle basic column conditions (default to AND)
