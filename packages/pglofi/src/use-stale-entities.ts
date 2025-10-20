@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import useSWR from "swr"
 import { getPostgrest } from "./postgrest/postgrest"
 import { pushToPullStream } from "./postgrest/pull-stream-helpers"
-import { tableCollections } from "./rxdb/rxdb"
+import { $tableCollections } from "./rxdb/rxdb"
 import { transformSqlRowsToTs } from "./shared/column-mapping"
 import type { QueryConfig } from "./shared/lofi-query-types"
 
@@ -296,7 +296,7 @@ export function useStaleEntities<
                                 )
                         )
                         .map((entityId) =>
-                            tableCollections[table].get(entityId)
+                            $tableCollections.get()[table].get(entityId)
                         )
                         .filter(Boolean)
 

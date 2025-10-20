@@ -1,9 +1,10 @@
+import { useStore } from "@nanostores/react"
 import { type Collection, createCollection } from "@tanstack/react-db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import { getTableName } from "drizzle-orm"
-import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
-import { useEffect, useSyncExternalStore } from "react"
+import { atom } from "nanostores"
+import { useEffect } from "react"
 import {
     addRxPlugin,
     createRxDatabase,
@@ -21,28 +22,23 @@ import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { type Observable, Subject } from "rxjs"
-
 import { getPostgrest } from "../postgrest/postgrest"
 import {
     transformSqlRowsToTs,
     transformTsToSql
 } from "../shared/column-mapping"
 import { filterTableSchema } from "../shared/schema-helpers"
-import { notify, subscribe } from "../shared/subscriptions"
-import type { LofiConfig } from "./lofi-config"
+import { $lofiConfig, type LofiConfig } from "./lofi-config"
 
 addRxPlugin(RxDBMigrationSchemaPlugin)
 addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
 
-type InternalLofiConfig = Omit<LofiConfig, "schema"> & {
-    schema: Record<string, AnyPgTable>
-}
+export const $lofiDb = atom<RxDatabase | null>(null)
 
-let lofiConfig: InternalLofiConfig | null = null
-export let rxDb: RxDatabase | null = null
-
-export let tableCollections: Record<string, Collection<object, string>> = {}
+export const $tableCollections = atom<
+    Record<string, Collection<object, string>>
+>({})
 
 export let pullStreams: Record<string, Subject<unknown>> = {}
 
@@ -53,7 +49,8 @@ export const sendToPullStream = (
         documents
     }: { checkpoint: unknown; documents: Record<string, unknown>[] }
 ) => {
-    if (!rxDb) throw new Error("Database not initialized")
+    const db = $lofiDb.get()
+    if (!db) throw new Error("Database not initialized")
 
     // Always convert IDs to strings before storing in RxDB
     const mappedDocuments = documents.map(({ id, ...rest }) => {
@@ -63,10 +60,10 @@ export const sendToPullStream = (
         }
     })
 
-    if (rxDb.isLeader()) {
+    if (db.isLeader()) {
         pullStreams[table].next({ checkpoint, documents: mappedDocuments })
     } else {
-        rxDb.leaderElector().broadcastChannel.postMessage({
+        db.leaderElector().broadcastChannel.postMessage({
             type: "pull-stream",
             payload: {
                 table,
@@ -78,24 +75,26 @@ export const sendToPullStream = (
 
 // Clean up existing database
 async function destroyDatabase() {
-    if (!rxDb) return
+    const db = $lofiDb.get()
+    if (!db) return
 
-    notify("lofi:db", null)
-    await rxDb.close()
+    await db.close()
     pullStreams = {}
 
-    Object.values(tableCollections).forEach((collection) => {
+    Object.values($tableCollections.get()).forEach((collection) => {
         collection.cleanup()
     })
 
-    tableCollections = {}
-    rxDb = null
+    $tableCollections.set({})
+    $lofiDb.set(null)
 }
 
-export async function initializeDb(userConfig: LofiConfig) {
+export async function initializeDb(
+    userConfig: Omit<LofiConfig, "schema"> & { schema: Record<string, unknown> }
+) {
     const sanitizedSchema = filterTableSchema(userConfig.schema)
 
-    const config: InternalLofiConfig = {
+    const config = {
         enabled: true,
         ...userConfig,
         schema: sanitizedSchema
@@ -123,38 +122,38 @@ export async function initializeDb(userConfig: LofiConfig) {
         )
     }
 
-    lofiConfig = config
+    const currentConfig = $lofiConfig.get()
 
     // Check if config has changed
     if (
-        lofiConfig?.name !== config.name ||
-        !isEqual(lofiConfig?.schema, config.schema) ||
-        lofiConfig?.storage !== config.storage ||
-        lofiConfig?.version !== config.version ||
-        !isEqual(lofiConfig?.migrationStrategy, config.migrationStrategy)
+        currentConfig?.name !== config.name ||
+        !isEqual(currentConfig?.schema, config.schema) ||
+        currentConfig?.storage !== config.storage ||
+        currentConfig?.version !== config.version ||
+        !isEqual(currentConfig?.migrationStrategy, config.migrationStrategy)
     ) {
         await destroyDatabase()
-        notify("lofi:config", config)
     }
+
+    $lofiConfig.set(config)
 
     // Only proceed if enabled is true
     if (!config.enabled) return
 
-    if (rxDb) return
+    if ($lofiDb.get()) return
 
-    rxDb = await createDatabase(config)
-    notify("lofi:db", rxDb)
+    const db = await createDatabase()
+    $lofiDb.set(db)
 }
 
-async function createDatabase({
-    name,
-    schema,
-    devMode,
-    storage,
-    version,
-    migrationStrategy,
-    onPushError
-}: InternalLofiConfig): Promise<RxDatabase> {
+async function createDatabase(): Promise<RxDatabase> {
+    const config = $lofiConfig.get()
+
+    if (!config) throw new Error("Config not found")
+
+    const { name, schema, storage, version, migrationStrategy, onPushError } =
+        config
+
     const db = await createRxDatabase({
         name:
             name ??
@@ -293,7 +292,10 @@ async function createDatabase({
             })
         )
 
-        tableCollections[tableName] = tableCollection
+        $tableCollections.set({
+            ...$tableCollections.get(),
+            [tableName]: tableCollection
+        })
 
         const pullStream$ = new Subject()
 
@@ -466,30 +468,16 @@ async function createDatabase({
 }
 
 export function useDb() {
-    const getSnapshot = () => rxDb
-
-    const subscribeToDb = (callback: () => void) => {
-        return subscribe("lofi:db", callback)
-    }
-
-    return useSyncExternalStore(subscribeToDb, getSnapshot, getSnapshot)
-}
-
-export function getLofiConfig() {
-    return lofiConfig
+    return useStore($lofiDb)
 }
 
 export function useLofiConfig() {
-    const getSnapshot = () => lofiConfig
-
-    const subscribeToConfig = (callback: () => void) => {
-        return subscribe("lofi:config", callback)
-    }
-
-    return useSyncExternalStore(subscribeToConfig, getSnapshot, getSnapshot)
+    return useStore($lofiConfig)
 }
 
-export function useInitializeDb(config: LofiConfig) {
+export function useInitializeDb(
+    config: Omit<LofiConfig, "schema"> & { schema: Record<string, unknown> }
+) {
     useEffect(() => {
         initializeDb(config)
     }, [config])

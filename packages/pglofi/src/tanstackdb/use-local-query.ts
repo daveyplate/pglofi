@@ -1,7 +1,7 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useMemo } from "react"
-import { tableCollections, useDb } from "../rxdb/rxdb"
+import { $tableCollections, useDb } from "../rxdb/rxdb"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { buildLocalQuery, flatToHierarchical } from "./local-query-helpers"
 import { useLiveQuery } from "./useLiveQuery"
@@ -27,7 +27,7 @@ export function useLocalQuery<
         (q) => {
             if (!db || !tableName || !tableKey) return null
 
-            const tableCollection = tableCollections[tableName]
+            const tableCollection = $tableCollections.get()[tableName]
 
             // Build complete query (selector, joins, sort/limit/skip) in one pass
             const parentAlias = tableName

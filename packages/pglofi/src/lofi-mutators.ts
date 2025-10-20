@@ -7,7 +7,7 @@ import {
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { merge } from "lodash"
 import { v7 } from "uuid"
-import { tableCollections } from "./rxdb/rxdb"
+import { $tableCollections } from "./rxdb/rxdb"
 
 const SQL_DEFAULT_HANDLERS = {
     "now()": () => new Date().toISOString(),
@@ -107,7 +107,7 @@ export function createLofiMutators<TSchema extends Record<string, AnyPgTable>>(
             isPending: true
         } as InferSelectModel<TSchema[TTableKey]>
 
-        tableCollections[tableName].insert(entity)
+        $tableCollections.get()[tableName].insert(entity)
 
         return entity
     }
@@ -122,7 +122,7 @@ export function createLofiMutators<TSchema extends Record<string, AnyPgTable>>(
         // Convert any Date objects to ISO strings
         const sanitizedFields = convertDatesToStrings(fields)
 
-        tableCollections[tableName].update(id, (draft) => {
+        $tableCollections.get()[tableName].update(id, (draft) => {
             merge(draft, {
                 ...sanitizedFields,
                 isPending: true
@@ -135,7 +135,7 @@ export function createLofiMutators<TSchema extends Record<string, AnyPgTable>>(
         id: string
     ) {
         const tableName = getTableName(schema[tableKey])
-        tableCollections[tableName].delete(id)
+        $tableCollections.get()[tableName].delete(id)
     }
 
     return {

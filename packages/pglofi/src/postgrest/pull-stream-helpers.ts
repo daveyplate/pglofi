@@ -1,6 +1,6 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { rxDb, sendToPullStream } from "../rxdb/rxdb"
+import { $lofiDb, sendToPullStream } from "../rxdb/rxdb"
 import type { AnyRelationConfig, QueryConfig } from "../shared/lofi-query-types"
 
 /**
@@ -73,9 +73,10 @@ export async function pushToPullStream(
 ): Promise<void> {
     if (rows.length === 0) return
 
-    if (!rxDb) throw new Error("Database not initialized")
+    const db = $lofiDb.get()
+    if (!db) throw new Error("Database not initialized")
 
-    const collection = rxDb[tableName]
+    const collection = db[tableName]
 
     if (!collection) throw new Error(`Collection ${tableName} not found`)
 

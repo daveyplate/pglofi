@@ -1,9 +1,11 @@
 import type { PostgrestError } from "@supabase/postgrest-js"
+import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { atom } from "nanostores"
 import type { RxCollection } from "rxdb"
 
 export type LofiConfig = {
     name?: string
-    schema: Record<string, unknown>
+    schema: Record<string, AnyPgTable>
     devMode?: boolean
     storage?: "localstorage" | "memory"
     enabled?: boolean
@@ -25,3 +27,5 @@ export type LofiConfig = {
         error: PostgrestError
     }) => void
 }
+
+export const $lofiConfig = atom<LofiConfig | null>(null)

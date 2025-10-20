@@ -13,7 +13,6 @@ import {
 } from "@tanstack/react-db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { tableCollections } from "../rxdb/rxdb"
 import { type FKInfo, getFKInfo } from "../shared/fk-helpers"
 import type { QueryConfig, SortConfig } from "../shared/lofi-query-types"
 import {
@@ -23,6 +22,7 @@ import {
     type SelectorConfig
 } from "../shared/lofi-selector-types"
 import { normalizeSortConfig } from "../shared/order-helpers"
+import { $tableCollections } from "../rxdb/rxdb"
 
 // Type for table records with dynamic structure
 type TableRecord = Record<string, unknown>
@@ -389,7 +389,7 @@ export function buildLocalQuery<
 
             const relatedTable = schema[config.from]
             const relatedTableName = getTableName(relatedTable)
-            const relatedCollection = tableCollections[relatedTableName]
+            const relatedCollection = $tableCollections.get()[relatedTableName]
 
             // Get foreign key info
             const fkInfo = getFKInfo(schema, parentTableKey, config)

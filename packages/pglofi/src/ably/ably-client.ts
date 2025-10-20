@@ -1,12 +1,12 @@
 import * as Ably from "ably"
-import { getLofiConfig } from "../rxdb/rxdb"
+import { $lofiConfig } from "../rxdb/lofi-config"
 
 let client: Ably.Realtime | null = null
 
 export function getAbly() {
     if (!client) {
         client = new Ably.Realtime({
-            key: getLofiConfig()?.ablyToken
+            key: $lofiConfig.get()?.ablyToken
         })
     }
 

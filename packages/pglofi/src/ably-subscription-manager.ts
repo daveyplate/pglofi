@@ -3,7 +3,8 @@ import { getTableName } from "drizzle-orm"
 import type { RxDatabase } from "rxdb"
 import { getAbly } from "./ably/ably-client"
 import { getPostgrest } from "./postgrest/postgrest"
-import { getLofiConfig, sendToPullStream } from "./rxdb/rxdb"
+import { $lofiConfig } from "./rxdb/lofi-config"
+import { sendToPullStream } from "./rxdb/rxdb"
 import { transformSqlRowsToTs } from "./shared/column-mapping"
 
 /**
@@ -135,7 +136,7 @@ class AblySubscriptionManager {
 
                             if (messageData) {
                                 // Transform SQL column names to TypeScript property names
-                                const config = getLofiConfig()
+                                const config = $lofiConfig.get()
                                 const schemaTable = config?.schema
                                     ? Object.values(config.schema).find(
                                           (t) => getTableName(t) === tableName
@@ -190,7 +191,7 @@ class AblySubscriptionManager {
                         // Update RxDB via pull stream
                         if (messageData) {
                             // Transform SQL column names to TypeScript property names
-                            const config = getLofiConfig()
+                            const config = $lofiConfig.get()
                             const schemaTable = config?.schema
                                 ? Object.values(config.schema).find(
                                       (t) => getTableName(t) === tableName
