@@ -1,5 +1,5 @@
 import { PostgrestClient } from "@supabase/postgrest-js"
-import { $lofiConfig } from "../rxdb/lofi-config"
+import { $lofiConfig } from "../db/lofi-config"
 
 export const getPostgrest = (token?: string) => {
     const config = $lofiConfig.get()

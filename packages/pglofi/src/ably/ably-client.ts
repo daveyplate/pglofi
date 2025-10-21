@@ -1,5 +1,5 @@
 import * as Ably from "ably"
-import { $lofiConfig } from "../rxdb/lofi-config"
+import { $lofiConfig } from "../db/lofi-config"
 
 let client: Ably.Realtime | null = null
 

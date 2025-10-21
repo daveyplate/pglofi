@@ -7,7 +7,7 @@ import {
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { merge } from "lodash"
 import { v7 } from "uuid"
-import { $tableCollections } from "./rxdb/rxdb"
+import { $tableCollections } from "./db/lofi-db"
 
 const SQL_DEFAULT_HANDLERS = {
     "now()": () => new Date().toISOString(),

@@ -1,7 +1,7 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useMemo } from "react"
-import { $tableCollections, useDb } from "../rxdb/rxdb"
+import { $tableCollections, useDb } from "../db/lofi-db"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { buildLocalQuery, flatToHierarchical } from "./local-query-helpers"
 import { useLiveQuery } from "./useLiveQuery"

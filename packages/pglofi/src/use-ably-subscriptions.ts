@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { ablySubscriptionManager } from "./ably-subscription-manager"
-import { useDb } from "./rxdb/rxdb"
+import { useDb } from "./db/lofi-db"
 
 /**
  * Hook to subscribe to Ably channels with automatic reference counting.

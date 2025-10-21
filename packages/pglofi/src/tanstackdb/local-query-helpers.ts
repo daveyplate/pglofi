@@ -13,6 +13,7 @@ import {
 } from "@tanstack/react-db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { $tableCollections } from "../db/lofi-db"
 import { type FKInfo, getFKInfo } from "../shared/fk-helpers"
 import type { QueryConfig, SortConfig } from "../shared/lofi-query-types"
 import {
@@ -22,7 +23,6 @@ import {
     type SelectorConfig
 } from "../shared/lofi-selector-types"
 import { normalizeSortConfig } from "../shared/order-helpers"
-import { $tableCollections } from "../rxdb/rxdb"
 
 // Type for table records with dynamic structure
 type TableRecord = Record<string, unknown>

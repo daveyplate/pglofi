@@ -2,9 +2,9 @@ import type * as Ably from "ably"
 import { getTableName } from "drizzle-orm"
 import type { RxDatabase } from "rxdb"
 import { getAbly } from "./ably/ably-client"
+import { $lofiConfig } from "./db/lofi-config"
+import { sendToPullStream } from "./db/lofi-db"
 import { getPostgrest } from "./postgrest/postgrest"
-import { $lofiConfig } from "./rxdb/lofi-config"
-import { sendToPullStream } from "./rxdb/rxdb"
 import { transformSqlRowsToTs } from "./shared/column-mapping"
 
 /**
