@@ -13,6 +13,7 @@ export const auth = betterAuth({
         camelCase: true,
         schema
     }),
+    trustedOrigins: ["http://localhost:3000", "https://*.ngrok.dev"],
     advanced: {
         database: { generateId: () => v7() }
     },

@@ -1,6 +1,7 @@
+import type { FetcherStore } from "@nanostores/query"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { atom } from "nanostores"
+import { atom, map } from "nanostores"
 import { transformPostgrestResponse } from "../shared/column-mapping"
 import type { InferQueryResult, QueryConfig } from "../shared/lofi-query-types"
 import { createFetcherStore } from "../store/fetcher"
@@ -11,7 +12,7 @@ import { buildSelectString } from "./select-builder"
 
 const MAX_PAGE_SIZE = 100
 
-// const $queryStores = map<{ [key: string\ FetcherStore }>({})
+const $queryStores = map<{ [key: string]: FetcherStore }>({})
 
 /**
  * Calculate page batches to fetch all data up to the current page.
@@ -62,12 +63,12 @@ export function createPostgrestQueryStore<
             : null
 
     // Check cache first
-    // if (queryKey) {
-    //     const cachedStores = $queryStores.get()
-    //     if (cachedStores[queryKey]) {
-    //         return cachedStores[queryKey]
-    //     }
-    // }
+    if (queryKey) {
+        const cachedStores = $queryStores.get()
+        if (cachedStores[queryKey]) {
+            return cachedStores[queryKey]
+        }
+    }
 
     // Create store if not cached
     const store = createFetcherStore(queryKey || [atom(null)], {
@@ -157,9 +158,9 @@ export function createPostgrestQueryStore<
     })
 
     // Cache the store
-    // if (queryKey) {
-    //     $queryStores.setKey(queryKey, store)
-    // }
+    if (queryKey) {
+        $queryStores.setKey(queryKey, store)
+    }
 
     return store
 }
