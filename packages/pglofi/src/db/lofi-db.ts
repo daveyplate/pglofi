@@ -3,7 +3,7 @@ import { type Collection, createCollection } from "@tanstack/react-db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import { getTableName } from "drizzle-orm"
 import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
-import { atom } from "nanostores"
+import { atom, map } from "nanostores"
 import { useEffect } from "react"
 import {
     addRxPlugin,
@@ -36,13 +36,13 @@ addRxPlugin(RxDBLeaderElectionPlugin)
 
 export const $lofiDb = atom<RxDatabase | null>(null)
 
-export const $tableCollections = atom<
-    Record<string, Collection<object, string>>
->({})
+export const $tableCollections = map<{
+    [key: string]: Collection<object, string>
+}>({})
 
 export let pullStreams: Record<string, Subject<unknown>> = {}
 
-export const sendToPullStream = (
+export const sendToPullStream = async (
     table: string,
     {
         checkpoint,
@@ -52,7 +52,6 @@ export const sendToPullStream = (
     const db = $lofiDb.get()
     if (!db) throw new Error("Database not initialized")
 
-    // Always convert IDs to strings before storing in RxDB
     const mappedDocuments = documents.map(({ id, ...rest }) => {
         return {
             id: `${id}`,
@@ -77,6 +76,8 @@ export const sendToPullStream = (
 async function destroyDatabase() {
     const db = $lofiDb.get()
     if (!db) return
+
+    console.log("[pglofi] destroyDatabase called")
 
     await db.close()
     pullStreams = {}
@@ -123,19 +124,17 @@ export async function initializeDb(
     }
 
     const currentConfig = $lofiConfig.get()
+    $lofiConfig.set(config)
 
     // Check if config has changed
     if (
         currentConfig?.name !== config.name ||
         !isEqual(currentConfig?.schema, config.schema) ||
         currentConfig?.storage !== config.storage ||
-        currentConfig?.version !== config.version ||
-        !isEqual(currentConfig?.migrationStrategy, config.migrationStrategy)
+        currentConfig?.version !== config.version
     ) {
         await destroyDatabase()
     }
-
-    $lofiConfig.set(config)
 
     // Only proceed if enabled is true
     if (!config.enabled) return

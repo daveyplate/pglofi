@@ -14,9 +14,8 @@ interface UseStaleEntitiesParams<
     TQuery
 > {
     schema: TSchema
-    data: unknown[] | undefined
-    remoteData: unknown[] | undefined
-    isValidating: boolean
+    data: unknown[] | undefined | null
+    remoteData: unknown[] | undefined | null
     tableKey?: TTableKey | null | 0 | false | ""
     query?: TQuery
 }
@@ -29,7 +28,6 @@ export function useStaleEntities<
     schema,
     data,
     remoteData,
-    isValidating,
     tableKey,
     query
 }: UseStaleEntitiesParams<TSchema, TTableKey, TQuery>): void {
@@ -52,7 +50,7 @@ export function useStaleEntities<
     // biome-ignore lint/correctness/useExhaustiveDependencies: ignore
     useEffect(() => {
         const remoteData = delayedRemoteData
-        if (!remoteData || !data || isValidating || !tableName) return
+        if (!remoteData || !data || !tableName) return
 
         // Helper to strip includes from an entity
         const stripIncludes = (

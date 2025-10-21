@@ -14,12 +14,15 @@ export interface UseLofiQueryResult<
     TTableKey extends keyof TSchema,
     TQuery
 > {
-    data: InferQueryResult<TSchema, TTableKey, TQuery>[] | undefined
-    remoteData: InferQueryResult<TSchema, TTableKey, TQuery>[] | undefined
+    data: InferQueryResult<TSchema, TTableKey, TQuery>[] | undefined | null
+    remoteData:
+        | InferQueryResult<TSchema, TTableKey, TQuery>[]
+        | undefined
+        | null
     isLoading: boolean
     isLoadingRemote: boolean
     error: Error | null
-    refetch: () => Promise<void>
+    refetch: () => Promise<void> | void
 }
 
 export interface UseLofiQueryOneResult<
@@ -32,7 +35,7 @@ export interface UseLofiQueryOneResult<
     isLoading: boolean
     isLoadingRemote: boolean
     error: Error | null
-    refetch: () => Promise<void>
+    refetch: () => Promise<void> | void
 }
 
 export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
@@ -52,10 +55,8 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
 
         const {
             data: remoteData,
-            isLoading: pgLoading,
-            isValidating,
-            error,
-            mutate
+            loading: pgLoading,
+            error
         } = usePostgrestQuery(schema, db && tableKey, query)
 
         // Send remote data to pull streams for local sync
@@ -72,17 +73,16 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             schema,
             data,
             remoteData,
-            isValidating,
             tableKey,
             query
         })
 
-        const refetch = useMemo(
-            () => async () => {
-                await mutate()
-            },
-            [mutate]
-        )
+        // const refetch = useMemo(
+        //     () => async () => {
+        //         await mutate()
+        //     },
+        //     [mutate]
+        // )
 
         // Determine Ably channels and subscribe to them for real-time updates
         // Only execute if sync is set to "ably" and ablyToken is present
@@ -95,7 +95,7 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             isLoading: !data?.length && (isLoading || pgLoading),
             isLoadingRemote: isLoading || pgLoading,
             error,
-            refetch
+            refetch: () => {}
         }
     }
 
@@ -122,24 +122,9 @@ export const createLofiHooks = <TSchema extends Record<string, AnyPgTable>>(
             isLoading: result.isLoading,
             isLoadingRemote: result.isLoadingRemote,
             error: result.error,
-            refetch: result.refetch
+            refetch: () => {}
         }
     }
 
     return { useQuery, useQueryOne }
-}
-
-export const createPostgrestHooks = <
-    TSchema extends Record<string, AnyPgTable>
->(
-    schema: TSchema
-) => {
-    function useQuery<
-        TTableKey extends keyof TSchema,
-        TQuery extends QueryConfig<TSchema, TSchema[TTableKey]>
-    >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
-        return usePostgrestQuery(schema, tableKey, query)
-    }
-
-    return { useQuery }
 }

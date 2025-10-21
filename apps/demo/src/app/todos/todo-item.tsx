@@ -45,7 +45,7 @@ export default function TodoItem({
             <Button
                 size="icon"
                 variant="ghost"
-                className="!bg-transparent size-4"
+                className="size-4 bg-transparent!"
                 onClick={() => lofi.delete("todos", todo.id)}
             >
                 <XIcon />
