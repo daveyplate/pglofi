@@ -1,12 +1,12 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { useEffect, useMemo, useState } from "react"
-import useSWR from "swr"
+import { useEffect, useState } from "react"
 import { $tableCollections } from "./db/lofi-db"
 import { getPostgrest } from "./postgrest/postgrest"
 import { pushToPullStream } from "./postgrest/pull-stream-helpers"
 import { transformSqlRowsToTs } from "./shared/column-mapping"
 import type { QueryConfig } from "./shared/lofi-query-types"
+import { createFetcherStore } from "./store/fetcher"
 
 interface UseStaleEntitiesParams<
     TSchema extends Record<string, AnyPgTable>,
@@ -237,7 +237,8 @@ export function useStaleEntities<
         setStaleEntities(nextStaleEntities)
     }, [delayedRemoteData])
 
-    const staleQueryKey = useMemo(() => {
+    // Create and subscribe to nanostore fetcher stores for each table with stale entities
+    useEffect(() => {
         const entries = Object.entries(staleEntities)
             .map(([table, entities]) => ({
                 table,
@@ -248,70 +249,89 @@ export function useStaleEntities<
             .filter(({ ids }) => ids.length > 0)
             .sort((a, b) => a.table.localeCompare(b.table))
 
-        if (entries.length === 0) {
-            return null
-        }
+        if (entries.length === 0) return
 
-        return ["pglofi:stale-entities", entries] as const
-    }, [staleEntities])
+        // Create a fetcher store for each table
+        const stores = entries.map(({ table, ids }) => {
+            const storeKey = `pglofi:stale-entities:${table}:${ids.join(",")}`
 
-    useSWR(
-        staleQueryKey,
-        async ([, entries]) => {
-            await Promise.all(
-                entries.map(async ({ table, ids }) => {
-                    if (ids.length === 0) return
+            return {
+                table,
+                ids,
+                store: createFetcherStore(storeKey, {
+                    fetcher: async () => {
+                        if (ids.length === 0) return null
 
-                    const postgrest = getPostgrest()
+                        const postgrest = getPostgrest()
 
-                    const { data, error } = await postgrest
-                        .from(table)
-                        .select("*,xmin")
-                        .in("id", ids)
+                        const { data, error } = await postgrest
+                            .from(table)
+                            .select("*,xmin")
+                            .in("id", ids)
 
-                    if (error) throw error
+                        if (error) throw error
 
-                    const drizzleTable = Object.values(schema).find(
-                        (t) => getTableName(t) === table
-                    )
-
-                    const transformedData = drizzleTable
-                        ? transformSqlRowsToTs(drizzleTable, data)
-                        : data
-
-                    if (transformedData.length > 0) {
-                        pushToPullStream(table, transformedData)
-                    }
-
-                    const missingEntities = ids
-                        .filter(
-                            (entityId) =>
-                                !transformedData.find(
-                                    (row) =>
-                                        String(
-                                            (row as Record<string, unknown>).id
-                                        ) === entityId
-                                )
+                        const drizzleTable = Object.values(schema).find(
+                            (t) => getTableName(t) === table
                         )
-                        .map((entityId) =>
-                            $tableCollections.get()[table].get(entityId)
-                        )
-                        .filter(Boolean)
 
-                    if (missingEntities.length > 0) {
-                        pushToPullStream(
-                            table,
-                            missingEntities.map((entity) => ({
-                                ...entity,
-                                _deleted: true
-                            }))
-                        )
+                        const transformedData = drizzleTable
+                            ? transformSqlRowsToTs(drizzleTable, data)
+                            : data
+
+                        if (transformedData.length > 0) {
+                            pushToPullStream(table, transformedData)
+                        }
+
+                        const missingEntities = ids
+                            .filter(
+                                (entityId) =>
+                                    !transformedData.find(
+                                        (row) =>
+                                            String(
+                                                (row as Record<string, unknown>)
+                                                    .id
+                                            ) === entityId
+                                    )
+                            )
+                            .map((entityId) =>
+                                $tableCollections.get()[table].get(entityId)
+                            )
+                            .filter(Boolean)
+
+                        if (missingEntities.length > 0) {
+                            pushToPullStream(
+                                table,
+                                missingEntities.map((entity) => ({
+                                    ...entity,
+                                    _deleted: true
+                                }))
+                            )
+                        }
+
+                        return null
                     }
                 })
-            )
+            }
+        })
 
-            return null
-        },
-        { focusThrottleInterval: 30000 }
-    )
+        // Subscribe to all stores
+        const unsubscribers = stores.map(({ store }) => {
+            // Trigger initial fetch
+            store.get()
+
+            // Subscribe to changes
+            return store.listen(() => {
+                // Store updated, but we don't need to do anything here
+                // as the fetcher already handles side effects
+            })
+        })
+
+        // Cleanup subscriptions
+        return () => {
+            for (const unsubscribe of unsubscribers) {
+                unsubscribe()
+            }
+        }
+    }, [staleEntities, schema])
 }

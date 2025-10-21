@@ -4,4 +4,7 @@ export const [
     createFetcherStore,
     createMutatorStore,
     { invalidateKeys, revalidateKeys, mutateCache }
-] = nanoquery()
+] = nanoquery({
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true
+})
