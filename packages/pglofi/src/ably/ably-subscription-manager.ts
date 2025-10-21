@@ -1,11 +1,11 @@
 import type * as Ably from "ably"
 import { getTableName } from "drizzle-orm"
 import type { RxDatabase } from "rxdb"
-import { getAbly } from "./ably/ably-client"
-import { $lofiConfig } from "./db/lofi-config"
-import { sendToPullStream } from "./db/lofi-db"
-import { getPostgrest } from "./postgrest/postgrest"
-import { transformSqlRowsToTs } from "./shared/column-mapping"
+import { $lofiConfig } from "../db/lofi-config"
+import { sendToPullStream } from "../db/lofi-db"
+import { getPostgrest } from "../postgrest/postgrest"
+import { transformSqlRowsToTs } from "../shared/column-mapping"
+import { $ablyClient } from "./ably-client"
 
 /**
  * Global Ably subscription manager with reference counting.
@@ -49,7 +49,16 @@ class AblySubscriptionManager {
                     existing.detachTimeoutId = undefined
                 }
             } else {
-                const ably = getAbly()
+                const ably = $ablyClient.get()
+
+                // Skip subscription if ably client is not available
+                if (!ably) {
+                    console.warn(
+                        `[AblySubscriptionManager] Ably client not initialized for channel: ${channelName}`
+                    )
+                    continue
+                }
+
                 const channel = ably.channels.get(channelName)
 
                 const handleMessage = async (message: Ably.Message) => {
@@ -260,6 +269,22 @@ class AblySubscriptionManager {
      */
     getActiveChannels(): string[] {
         return Array.from(this.subscriptions.keys())
+    }
+
+    /**
+     * Clear all subscriptions (used when Ably client is reset)
+     */
+    clearAllSubscriptions(): void {
+        for (const [
+            _channelName,
+            subscription
+        ] of this.subscriptions.entries()) {
+            if (subscription.detachTimeoutId) {
+                clearTimeout(subscription.detachTimeoutId)
+            }
+            subscription.unsubscribe()
+        }
+        this.subscriptions.clear()
     }
 }
 

@@ -1,8 +1,8 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useEffect, useRef, useState } from "react"
-import { getForeignKeys } from "./shared/fk-helpers"
-import type { QueryConfig } from "./shared/lofi-query-types"
+import { getForeignKeys } from "../shared/fk-helpers"
+import type { QueryConfig } from "../shared/lofi-query-types"
 import { useAblySubscriptions } from "./use-ably-subscriptions"
 
 /**

@@ -22,6 +22,7 @@ import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { type Observable, Subject } from "rxjs"
+import { setupAblySync } from "../ably/sync-ably"
 import { getPostgrest } from "../postgrest/postgrest"
 import {
     transformSqlRowsToTs,
@@ -92,7 +93,7 @@ async function destroyDatabase() {
 
 export async function initializeDb(
     userConfig: Omit<LofiConfig, "schema"> & { schema: Record<string, unknown> }
-) {
+): Promise<void> {
     const sanitizedSchema = filterTableSchema(userConfig.schema)
 
     const config = {
@@ -137,12 +138,20 @@ export async function initializeDb(
     }
 
     // Only proceed if enabled is true
-    if (!config.enabled) return
+    if (!config.enabled) {
+        return
+    }
 
-    if ($lofiDb.get()) return
+    if (!$lofiDb.get()) {
+        const db = await createDatabase()
+        $lofiDb.set(db)
+    }
 
-    const db = await createDatabase()
-    $lofiDb.set(db)
+    const db = $lofiDb.get()
+    if (!db) throw new Error("Database not initialized")
+
+    // Set up Ably subscription management (idempotent, only runs once)
+    setupAblySync(db)
 }
 
 async function createDatabase(): Promise<RxDatabase> {

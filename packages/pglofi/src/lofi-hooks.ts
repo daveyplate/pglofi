@@ -1,12 +1,12 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { useEffect, useMemo } from "react"
+import { useAblyChannels } from "./ably/use-ably-channels"
 import { useDb, useLofiConfig } from "./db/lofi-db"
 import { sendToPullStreams } from "./postgrest/pull-stream-helpers"
 import { usePostgrestQuery } from "./postgrest/use-postgrest-query"
 import type { InferQueryResult, QueryConfig } from "./shared/lofi-query-types"
 import { useLocalQuery } from "./tanstackdb/use-local-query"
-import { useAblyChannels } from "./use-ably-channels"
 import { useStaleEntities } from "./use-stale-entities"
 
 export interface UseLofiQueryResult<
