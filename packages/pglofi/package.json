@@ -24,7 +24,7 @@
         "@nanostores/query": "^0.3.4",
         "@nanostores/react": "^1.0.0",
         "@standard-schema/spec": "^1.0.0",
-        "@supabase/postgrest-js": "^2.76.0",
+        "@supabase/postgrest-js": "^2.76.1",
         "@tanstack/db": "^0.4.11",
         "@tanstack/react-db": "^0.1.33",
         "@tanstack/rxdb-db-collection": "^0.1.22",
@@ -41,7 +41,7 @@
     "devDependencies": {
         "@biomejs/biome": "2.2.6",
         "@types/lodash": "^4.17.20",
-        "@types/node": "^24.9.0",
+        "@types/node": "^24.9.1",
         "@types/react": "^19.2.2",
         "@types/react-dom": "^19.2.2",
         "dotenv": "^17.2.3",
