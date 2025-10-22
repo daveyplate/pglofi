@@ -16,7 +16,7 @@ import { $ablyClient } from "./ably-client"
  * Detaching is debounced to prevent race conditions during navigation.
  */
 class AblySubscriptionManager {
-    private subscriptions = new Map<
+    subscriptions = new Map<
         string,
         {
             refCount: number
