@@ -42,7 +42,8 @@
                     "fix": "safe",
                     "level": "info",
                     "options": {}
-                }
+                },
+                "useNodejsImportProtocol": "off"
             },
             "suspicious": {
                 "noArrayIndexKey": "off",
