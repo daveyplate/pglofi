@@ -101,10 +101,10 @@ function setupChannelSync(db: RxDatabase) {
         // Remove old channels
         for (const channelName of toRemove) {
             const subscription =
-                ablySubscriptionManager["subscriptions"].get(channelName)
+                ablySubscriptionManager.subscriptions.get(channelName)
             if (subscription) {
                 subscription.unsubscribe()
-                ablySubscriptionManager["subscriptions"].delete(channelName)
+                ablySubscriptionManager.subscriptions.delete(channelName)
             }
         }
 

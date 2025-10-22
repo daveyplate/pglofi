@@ -11,17 +11,19 @@ import {
     type MigrationStrategies,
     type RxCollectionCreator,
     type RxDatabase,
-    type RxReplicationPullStreamItem,
-    type RxStorage
+    type RxReplicationPullStreamItem
 } from "rxdb"
+import { disableWarnings } from "rxdb/plugins/dev-mode"
 import { RxDBLeaderElectionPlugin } from "rxdb/plugins/leader-election"
 import { RxDBMigrationSchemaPlugin } from "rxdb/plugins/migration-schema"
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder"
 import { replicateRxCollection } from "rxdb/plugins/replication"
+import { getRxStorageDexie } from "rxdb/plugins/storage-dexie"
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { type Observable, Subject } from "rxjs"
+
 import { setupAblySync } from "../ably/sync-ably"
 import { getPostgrest } from "../postgrest/postgrest"
 import {
@@ -34,6 +36,8 @@ import { $lofiConfig, type LofiConfig } from "./lofi-config"
 addRxPlugin(RxDBMigrationSchemaPlugin)
 addRxPlugin(RxDBQueryBuilderPlugin)
 addRxPlugin(RxDBLeaderElectionPlugin)
+
+disableWarnings()
 
 export const $lofiDb = atom<RxDatabase | null>(null)
 
@@ -159,18 +163,34 @@ async function createDatabase(): Promise<RxDatabase> {
 
     if (!config) throw new Error("Config not found")
 
-    const { name, schema, storage, version, migrationStrategy, onPushError } =
-        config
+    const {
+        name,
+        schema,
+        storage,
+        version,
+        devMode,
+        migrationStrategy,
+        onPushError
+    } = config
+
+    const storageInstance =
+        storage === "memory"
+            ? getRxStorageMemory()
+            : storage === "localstorage"
+              ? getRxStorageLocalstorage()
+              : storage === "dexie"
+                ? getRxStorageDexie()
+                : storage!
 
     const db = await createRxDatabase({
         name:
             name ??
             window.location.hostname.replace(/[^a-z0-9]/gi, "_").toLowerCase(),
-        storage: wrappedValidateAjvStorage({
-            storage: (storage === "localstorage"
-                ? getRxStorageLocalstorage()
-                : getRxStorageMemory()) as RxStorage<unknown, unknown>
-        }),
+        storage: !devMode
+            ? storageInstance
+            : wrappedValidateAjvStorage({
+                  storage: storageInstance
+              }),
         multiInstance: storage !== "memory",
         closeDuplicates: true
     })
