@@ -18,7 +18,7 @@ importers:
         specifier: latest
         version: 2.6.0
 
-  examples/next-demo:
+  examples/next-ably-example:
     dependencies:
       '@daveyplate/better-auth-ui':
         specifier: ^3.2.7
