@@ -10,5 +10,5 @@
         "nx": "22.0.2",
         "turbo": "latest"
     },
-    "packageManager": "pnpm@10.19.0"
+    "packageManager": "pnpm@10.20.0"
 }
