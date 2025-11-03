@@ -21,7 +21,7 @@ function TodosPage() {
         isLoading,
         isReady
     } = useLiveQuery((q) => {
-        const query = q.from({ todo: lofi.todosCollection! })
+        const query = q.from({ todo: lofi.collections.todos })
         // console.log("query", query)
         return query
     })

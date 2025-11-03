@@ -21,7 +21,10 @@ export const Route = createFileRoute("/api/shape")({
                 })
 
                 // Set the table server-side - not from client params
-                originUrl.searchParams.set(`table`, `todos`)
+                originUrl.searchParams.set(
+                    `table`,
+                    url.searchParams.get(`table`)!
+                )
 
                 originUrl.searchParams.set(
                     "source_id",
