@@ -1,5 +1,5 @@
 import { Shape, ShapeStream } from "@electric-sql/client"
-import type { Collection } from "@tanstack/react-db"
+import type { Collection } from "@tanstack/db"
 import type { InferSelectModel } from "drizzle-orm"
 import { getTableName } from "drizzle-orm"
 import type { RxReplicationPullStreamItem } from "rxdb/plugins/core"

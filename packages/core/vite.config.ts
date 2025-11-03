@@ -14,7 +14,7 @@ export default defineConfig({
             fileName: "index"
         },
         rollupOptions: {
-            external: ["@tanstack/react-db"]
+            external: ["@tanstack/db"]
         }
     }
 })

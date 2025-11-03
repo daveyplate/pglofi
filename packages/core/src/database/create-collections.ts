@@ -1,4 +1,4 @@
-import { type Collection, createCollection } from "@tanstack/react-db"
+import { type Collection, createCollection } from "@tanstack/db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import type { InferSelectModel } from "drizzle-orm"
 import { getTableName } from "drizzle-orm"

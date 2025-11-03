@@ -1,5 +1,5 @@
 import { useStore } from "@nanostores/react"
-import { type Collection, createCollection } from "@tanstack/react-db"
+import { type Collection, createCollection } from "@tanstack/db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import { getTableName } from "drizzle-orm"
 import { differenceWith, fromPairs, isEqual, toPairs } from "lodash"
