@@ -1,21 +1,12 @@
 import { Shape, ShapeStream } from "@electric-sql/client"
 import { createCollection } from "@tanstack/react-db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
-import {
-    addRxPlugin,
-    createRxDatabase,
-    type RxReplicationPullStreamItem
-} from "rxdb/plugins/core"
-import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
+import type { RxReplicationPullStreamItem } from "rxdb/plugins/core"
 import { replicateRxCollection } from "rxdb/plugins/replication"
-import { getRxStorageDexie } from "rxdb/plugins/storage-dexie"
-import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
-import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
-import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { Subject } from "rxjs"
 
+import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
-import { filterTableSchema } from "./utils/schema-filter"
 
 let token: string | undefined
 
@@ -23,34 +14,9 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
     const isServer = typeof window === "undefined"
-
     const resolvedConfig = receiveConfig(config)
-    const { storage, devMode, schema } = resolvedConfig
 
-    const sanitizedSchema = filterTableSchema(schema)
-
-    if (devMode) {
-        addRxPlugin(RxDBDevModePlugin)
-    }
-
-    const storageInstance =
-        isServer || storage === "memory"
-            ? getRxStorageMemory()
-            : storage === "localstorage"
-              ? getRxStorageLocalstorage()
-              : storage === "dexie"
-                ? getRxStorageDexie()
-                : storage!
-
-    const db = await createRxDatabase({
-        name: resolvedConfig.name!,
-        closeDuplicates: true,
-        storage: devMode
-            ? wrappedValidateAjvStorage({
-                  storage: storageInstance
-              })
-            : storageInstance
-    })
+    const db = await createDatabase(resolvedConfig)
 
     // TODO only clear these if there's an error
     if (!isServer) {
