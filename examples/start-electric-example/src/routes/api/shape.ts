@@ -1,7 +1,7 @@
 import { ELECTRIC_PROTOCOL_QUERY_PARAMS } from "@electric-sql/client"
 import { createFileRoute } from "@tanstack/react-router"
 
-export const Route = createFileRoute("/api/todos")({
+export const Route = createFileRoute("/api/shape")({
     server: {
         handlers: {
             GET: async ({ request }) => {

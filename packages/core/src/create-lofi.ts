@@ -6,26 +6,29 @@ import {
     createRxDatabase,
     type RxReplicationPullStreamItem
 } from "rxdb/plugins/core"
-// Enable dev mode (optional, recommended during development)
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
 import { replicateRxCollection } from "rxdb/plugins/replication"
-/**
- * Here we use the localstorage based storage for RxDB.
- * RxDB has a wide range of storages based on Dexie.js, IndexedDB, SQLite and more.
- */
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
-// add json-schema validation (optional)
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { Subject } from "rxjs"
-import type { LofiConfig } from "./db/lofi-config"
+
+import { type LofiConfig, receiveConfig } from "./db/lofi-config"
+
+let token: string | undefined
 
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
-    addRxPlugin(RxDBDevModePlugin)
+    if (typeof window === "undefined") return {}
+
+    const resolvedConfig = receiveConfig(config)
+
+    if (resolvedConfig.devMode) {
+        addRxPlugin(RxDBDevModePlugin)
+    }
 
     const db = await createRxDatabase({
-        name: "todos",
+        name: resolvedConfig.name ?? "todos",
         closeDuplicates: true,
         storage: wrappedValidateAjvStorage({
             storage: getRxStorageLocalstorage()
@@ -61,6 +64,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     const replicationState = replicateRxCollection({
         replicationIdentifier: "todos",
         collection: db.todos,
+        autoStart: resolvedConfig.autoStart ?? true,
         pull: {
             handler: async () => {
                 return { checkpoint: {}, documents: [] }
@@ -76,7 +80,11 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     })
 
     const stream = new ShapeStream({
-        url: `http://localhost:3000/api/todos`
+        url: resolvedConfig.shapeURL!,
+        params: {
+            table: "todos"
+        },
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined
     })
 
     const shape = new Shape(stream)
@@ -100,6 +108,9 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     )
 
     return {
-        todosCollection
+        todosCollection,
+        setToken: (_token: string) => {
+            token = _token
+        }
     }
 }

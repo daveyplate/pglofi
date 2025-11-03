@@ -1,11 +1,19 @@
 import { useLiveQuery } from "@tanstack/react-db"
-import { createFileRoute } from "@tanstack/react-router"
+import { ClientOnly, createFileRoute } from "@tanstack/react-router"
 import { lofi } from "@/lib/lofi"
 
 export const Route = createFileRoute("/todos")({
-    ssr: false,
-    component: TodosPage
+    ssr: true,
+    component: TodosPageClient
 })
+
+function TodosPageClient() {
+    return (
+        <ClientOnly>
+            <TodosPage />
+        </ClientOnly>
+    )
+}
 
 function TodosPage() {
     const {

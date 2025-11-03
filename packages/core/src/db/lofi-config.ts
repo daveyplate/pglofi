@@ -4,6 +4,7 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
     name?: string
     schema: TSchema
     devMode?: boolean
+    autoStart?: boolean
     storage?: "localstorage" | "memory" | "dexie" | RxStorage<unknown, unknown>
     shapeURL?: string
     token?: string
@@ -14,4 +15,19 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
         oldDocumentData: Record<string, unknown>,
         collection: RxCollection
     ) => unknown
+}
+
+export function receiveConfig<TSchema extends Record<string, unknown>>(
+    config: LofiConfig<TSchema>
+): LofiConfig<TSchema> {
+    return {
+        devMode: process.env.NODE_ENV === "development",
+        storage: "memory",
+        shapeURL: `${window.location.origin}/api/shape`,
+        version: 0,
+        name: window.location.hostname
+            .replace(/[^a-z0-9]/gi, "_")
+            .toLowerCase(),
+        ...config
+    }
 }

@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TodosRouteImport } from './routes/todos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthPathRouteImport } from './routes/auth/$path'
-import { Route as ApiTodosRouteImport } from './routes/api/todos'
+import { Route as ApiShapeRouteImport } from './routes/api/shape'
 import { Route as AccountPathRouteImport } from './routes/account/$path'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -31,9 +31,9 @@ const AuthPathRoute = AuthPathRouteImport.update({
   path: '/auth/$path',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiTodosRoute = ApiTodosRouteImport.update({
-  id: '/api/todos',
-  path: '/api/todos',
+const ApiShapeRoute = ApiShapeRouteImport.update({
+  id: '/api/shape',
+  path: '/api/shape',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountPathRoute = AccountPathRouteImport.update({
@@ -51,7 +51,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/todos': typeof TodosRoute
   '/account/$path': typeof AccountPathRoute
-  '/api/todos': typeof ApiTodosRoute
+  '/api/shape': typeof ApiShapeRoute
   '/auth/$path': typeof AuthPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -59,7 +59,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/todos': typeof TodosRoute
   '/account/$path': typeof AccountPathRoute
-  '/api/todos': typeof ApiTodosRoute
+  '/api/shape': typeof ApiShapeRoute
   '/auth/$path': typeof AuthPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -68,7 +68,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/todos': typeof TodosRoute
   '/account/$path': typeof AccountPathRoute
-  '/api/todos': typeof ApiTodosRoute
+  '/api/shape': typeof ApiShapeRoute
   '/auth/$path': typeof AuthPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -78,7 +78,7 @@ export interface FileRouteTypes {
     | '/'
     | '/todos'
     | '/account/$path'
-    | '/api/todos'
+    | '/api/shape'
     | '/auth/$path'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -86,7 +86,7 @@ export interface FileRouteTypes {
     | '/'
     | '/todos'
     | '/account/$path'
-    | '/api/todos'
+    | '/api/shape'
     | '/auth/$path'
     | '/api/auth/$'
   id:
@@ -94,7 +94,7 @@ export interface FileRouteTypes {
     | '/'
     | '/todos'
     | '/account/$path'
-    | '/api/todos'
+    | '/api/shape'
     | '/auth/$path'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -103,7 +103,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TodosRoute: typeof TodosRoute
   AccountPathRoute: typeof AccountPathRoute
-  ApiTodosRoute: typeof ApiTodosRoute
+  ApiShapeRoute: typeof ApiShapeRoute
   AuthPathRoute: typeof AuthPathRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -131,11 +131,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPathRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/todos': {
-      id: '/api/todos'
-      path: '/api/todos'
-      fullPath: '/api/todos'
-      preLoaderRoute: typeof ApiTodosRouteImport
+    '/api/shape': {
+      id: '/api/shape'
+      path: '/api/shape'
+      fullPath: '/api/shape'
+      preLoaderRoute: typeof ApiShapeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account/$path': {
@@ -159,7 +159,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TodosRoute: TodosRoute,
   AccountPathRoute: AccountPathRoute,
-  ApiTodosRoute: ApiTodosRoute,
+  ApiShapeRoute: ApiShapeRoute,
   AuthPathRoute: AuthPathRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
