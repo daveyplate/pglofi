@@ -8,7 +8,8 @@
         },
         "dev": {
             "dependsOn": ["^dev"],
-            "continuous": true
+            "continuous": true,
+            "cache": false
         }
     },
     "nxCloudId": "6907387801bc2c639b208616"
