@@ -14,17 +14,20 @@ import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { Subject } from "rxjs"
 
-import { type LofiConfig, receiveConfig } from "./db/lofi-config"
+import { type LofiConfig, receiveConfig } from "./database/lofi-config"
+import { filterTableSchema } from "./utils/schema-filter"
 
 let token: string | undefined
 
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
-    const resolvedConfig = receiveConfig(config)
-    const { storage, devMode } = resolvedConfig
-
     const isServer = typeof window === "undefined"
+
+    const resolvedConfig = receiveConfig(config)
+    const { storage, devMode, schema } = resolvedConfig
+
+    const sanitizedSchema = filterTableSchema(schema)
 
     if (devMode) {
         addRxPlugin(RxDBDevModePlugin)

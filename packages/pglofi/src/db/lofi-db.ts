@@ -30,7 +30,7 @@ import {
     transformSqlRowsToTs,
     transformTsToSql
 } from "../shared/column-mapping"
-import { filterTableSchema } from "../shared/schema-helpers"
+import { filterTableSchema } from "../shared/drizzle-table-filter"
 import { $lofiConfig, type LofiConfig } from "./lofi-config"
 
 addRxPlugin(RxDBMigrationSchemaPlugin)
