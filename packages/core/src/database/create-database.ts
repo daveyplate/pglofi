@@ -13,7 +13,7 @@ export async function createDatabase<TSchema extends Record<string, unknown>>(
     const isServer = typeof window === "undefined"
     const { storage, devMode, name } = config
 
-    if (devMode) {
+    if (!isServer && devMode) {
         addRxPlugin(RxDBDevModePlugin)
     }
 
