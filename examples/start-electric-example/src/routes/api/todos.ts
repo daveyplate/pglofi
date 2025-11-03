@@ -12,7 +12,7 @@ export const Route = createFileRoute("/api/todos")({
                     `https://api.electric-sql.cloud/v1/shape`
                 )
 
-                console.log(ELECTRIC_PROTOCOL_QUERY_PARAMS)
+                // console.log(ELECTRIC_PROTOCOL_QUERY_PARAMS)
                 // Only pass through Electric protocol parameters
                 url.searchParams.forEach((value, key) => {
                     if (ELECTRIC_PROTOCOL_QUERY_PARAMS.includes(key)) {

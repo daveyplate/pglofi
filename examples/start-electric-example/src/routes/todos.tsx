@@ -1,6 +1,6 @@
 import { useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute } from "@tanstack/react-router"
-import { todosCollection } from "@/collections/rxdb"
+import { lofi } from "@/lib/lofi"
 
 export const Route = createFileRoute("/todos")({
     ssr: false,
@@ -13,7 +13,11 @@ function TodosPage() {
         isLoading,
         isReady
     } = useLiveQuery((q) => {
-        const query = q.from({ todo: todosCollection })
+        if (!lofi.todosCollection) return null
+
+        console.log("lofi.todosCollection", lofi.todosCollection)
+
+        const query = q.from({ todo: lofi.todosCollection })
         // console.log("query", query)
         return query
     })
