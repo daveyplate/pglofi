@@ -4,11 +4,11 @@ import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import {
     addRxPlugin,
     createRxDatabase,
-    type RxReplicationPullStreamItem,
-    type RxStorage
+    type RxReplicationPullStreamItem
 } from "rxdb/plugins/core"
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
 import { replicateRxCollection } from "rxdb/plugins/replication"
+import { getRxStorageDexie } from "rxdb/plugins/storage-dexie"
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
@@ -22,27 +22,35 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
     const resolvedConfig = receiveConfig(config)
+    const { storage, devMode } = resolvedConfig
 
-    if (resolvedConfig.devMode) {
+    const isServer = typeof window === "undefined"
+
+    if (devMode) {
         addRxPlugin(RxDBDevModePlugin)
     }
+
+    const storageInstance =
+        isServer || storage === "memory"
+            ? getRxStorageMemory()
+            : storage === "localstorage"
+              ? getRxStorageLocalstorage()
+              : storage === "dexie"
+                ? getRxStorageDexie()
+                : storage!
 
     const db = await createRxDatabase({
         name: resolvedConfig.name!,
         closeDuplicates: true,
-        storage: wrappedValidateAjvStorage({
-            storage:
-                typeof window === "undefined"
-                    ? getRxStorageMemory()
-                    : (getRxStorageLocalstorage() as RxStorage<
-                          unknown,
-                          unknown
-                      >)
-        })
+        storage: devMode
+            ? wrappedValidateAjvStorage({
+                  storage: storageInstance
+              })
+            : storageInstance
     })
 
     // TODO only clear these if there's an error
-    if (typeof window !== "undefined") {
+    if (!isServer) {
         db.storageInstances.forEach((storage) => {
             // storage.remove()
         })
@@ -69,7 +77,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         RxReplicationPullStreamItem<unknown, unknown>
     >()
 
-    if (typeof window !== "undefined") {
+    if (!isServer) {
         replicateRxCollection({
             replicationIdentifier: "todos",
             collection: db.todos,

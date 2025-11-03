@@ -8,8 +8,8 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
     storage?: "localstorage" | "memory" | "dexie" | RxStorage<unknown, unknown>
     shapeURL?: string
     token?: string
-    version?: number
     autoResetStorage?: boolean
+    version?: number
     migrationStrategy?: (
         table: string,
         version: number,
