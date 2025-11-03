@@ -9,6 +9,7 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
     shapeURL?: string
     token?: string
     version?: number
+    autoResetStorage?: boolean
     migrationStrategy?: (
         table: string,
         version: number,
@@ -20,6 +21,15 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
 export function receiveConfig<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ): LofiConfig<TSchema> {
+    if (typeof window === "undefined") {
+        return {
+            devMode: process.env.NODE_ENV === "development",
+            name: "pglofi",
+            version: 0,
+            ...config
+        }
+    }
+
     return {
         devMode: process.env.NODE_ENV === "development",
         storage: "memory",
