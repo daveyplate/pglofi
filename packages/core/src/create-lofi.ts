@@ -7,9 +7,9 @@ import { createCollections } from "./database/create-collections"
 import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
 import {
-    createQuery as createQueryPrimitive,
+    createStore as createStorePrimitive,
     type QueryStore
-} from "./query/create-query"
+} from "./query/query-stores"
 import type { QueryConfig } from "./query/query-types"
 import {
     filterTableSchema,
@@ -133,7 +133,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         TTableKey extends TableKey<TSchema>,
         TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
-        return createQueryPrimitive(
+        return createStorePrimitive(
             filterTableSchema(resolvedConfig.schema),
             collections,
             tableKey,

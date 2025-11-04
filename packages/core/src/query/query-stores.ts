@@ -15,7 +15,7 @@ export type QueryStore = Store<QueryResult, AnyUpdater>
 
 const queryStores = new Map<string, QueryStore>()
 
-export function createQuery<
+export function createStore<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
     TQuery extends QueryConfig<TSchema, TTableKey>
