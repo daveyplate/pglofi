@@ -3,5 +3,5 @@ import * as schema from "@/database/schema"
 
 export const lofi = await createLofi({
     schema: schema,
-    storage: "localstorage"
+    storage: "memory"
 })

@@ -10,6 +10,7 @@ import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
 import { createQuery } from "./query/create-query"
 import type { QueryConfig } from "./query/query-types"
+import { subscribeQuery } from "./query/subscribe-query"
 import {
     filterTableSchema,
     type SchemaCollections,
@@ -37,6 +38,13 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     ) => ReturnType<
         typeof createQuery<TablesOnly<TSchema>, TTableKey, TQueryConfig>
     >
+    subscribeQuery: <
+        TTableKey extends TableKey<TSchema>,
+        TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
+    >(
+        tableKey?: TTableKey | null | 0 | false | "",
+        query?: TQueryConfig
+    ) => () => void
     collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
     syncStarted: boolean
@@ -142,6 +150,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         },
         createQuery: (tableKey, query) =>
             createQuery(sanitizedSchema, collections, tableKey, query),
+        subscribeQuery: (tableKey, query) =>
+            subscribeQuery(sanitizedSchema, collections, tableKey, query),
         collections,
         pullStreams,
         syncStarted: syncStartedStore.state
