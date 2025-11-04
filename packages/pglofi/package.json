@@ -25,9 +25,9 @@
         "@nanostores/react": "^1.0.0",
         "@standard-schema/spec": "^1.0.0",
         "@supabase/postgrest-js": "^2.78.0",
-        "@tanstack/db": "^0.4.16",
-        "@tanstack/react-db": "^0.1.38",
-        "@tanstack/rxdb-db-collection": "^0.1.27",
+        "@tanstack/db": "^0.4.17",
+        "@tanstack/react-db": "^0.1.39",
+        "@tanstack/rxdb-db-collection": "^0.1.28",
         "ably": "^2.14.0",
         "drizzle-orm": "^0.44.7",
         "lodash": "^4.17.21",
@@ -39,7 +39,7 @@
         "uuid": "^13.0.0"
     },
     "devDependencies": {
-        "@biomejs/biome": "2.3.2",
+        "@biomejs/biome": "2.3.3",
         "@types/lodash": "^4.17.20",
         "@types/node": "^24.10.0",
         "@types/react": "^19.2.2",
