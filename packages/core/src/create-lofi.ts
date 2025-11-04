@@ -21,11 +21,10 @@ import {
 let token: string | undefined
 let syncStarted = false
 
-type PullStreams<TSchema extends Record<string, unknown>> = {
-    [K in TableKey<TSchema>]: Subject<
-        RxReplicationPullStreamItem<unknown, unknown>
-    >
-}
+type PullStreams<TSchema extends Record<string, unknown>> = Record<
+    TableKey<TSchema>,
+    Subject<RxReplicationPullStreamItem<unknown, unknown>>
+>
 
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     setToken: (token: string) => void

@@ -1,4 +1,4 @@
-import { createLofi, createQuery } from "@pglofi/core"
+import { createLofi } from "@pglofi/core"
 import * as schema from "@/database/schema"
 
 export const lofi = await createLofi({
@@ -18,14 +18,6 @@ lofi.createQuery("todos", {
     },
     limit: 10,
     sort: ["createdAt"]
-})
-
-// Example 2: Direct createQuery also has proper type inference
-createQuery({ todos: schema.todos }, lofi.collections, "todos", {
-    selector: {
-        isComplete: false,
-        userId: "123e4567-e89b-12d3-a456-426614174000"
-    }
 })
 
 // Example 3: Complex selectors with logical operators
