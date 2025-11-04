@@ -2,7 +2,7 @@ import { Shape, ShapeStream } from "@electric-sql/client"
 import type { Collection } from "@tanstack/db"
 import { Store } from "@tanstack/store"
 import { getTableName, type InferSelectModel } from "drizzle-orm"
-import isEqual from "lodash/isEqual"
+import { isEqual } from "lodash-es"
 import {
     addRxPlugin,
     type RxReplicationPullStreamItem
