@@ -14,6 +14,7 @@ import type { QueryConfig } from "./query/query-types"
 import {
     filterTableSchema,
     type SchemaCollections,
+    type TableKey,
     type TablesOnly
 } from "./utils/schema-filter"
 
@@ -21,7 +22,7 @@ let token: string | undefined
 let syncStarted = false
 
 type PullStreams<TSchema extends Record<string, unknown>> = {
-    [K in keyof TablesOnly<TSchema>]: Subject<
+    [K in TableKey<TSchema>]: Subject<
         RxReplicationPullStreamItem<unknown, unknown>
     >
 }
@@ -30,7 +31,7 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     setToken: (token: string) => void
     startSync: () => void
     createQuery: <
-        TTableKey extends keyof TablesOnly<TSchema>,
+        TTableKey extends TableKey<TSchema>,
         TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(
         tableKey?: TTableKey | null | 0 | false | "",
@@ -70,7 +71,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
         const schemaTableKeys = Object.keys(
             sanitizedSchema
-        ) as (keyof TablesOnly<TSchema>)[]
+        ) as TableKey<TSchema>[]
 
         for (const tableKey of schemaTableKeys) {
             const schemaTable = sanitizedSchema[tableKey]
@@ -130,7 +131,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     }
 
     function createQuery<
-        TTableKey extends keyof TablesOnly<TSchema>,
+        TTableKey extends TableKey<TSchema>,
         TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
         return createQueryPrimitive(
