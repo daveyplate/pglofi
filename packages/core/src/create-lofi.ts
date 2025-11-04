@@ -29,7 +29,7 @@ type PullStreams<TSchema extends Record<string, unknown>> = Record<
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     setToken: (token: string) => void
     startSync: () => void
-    createQuery: <
+    createStore: <
         TTableKey extends TableKey<TSchema>,
         TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(
@@ -129,7 +129,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         }
     }
 
-    function createQuery<
+    function createStore<
         TTableKey extends TableKey<TSchema>,
         TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
@@ -148,7 +148,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         startSync: () => {
             syncStarted = true
         },
-        createQuery,
+        createStore,
         collections,
         pullStreams,
         syncStarted

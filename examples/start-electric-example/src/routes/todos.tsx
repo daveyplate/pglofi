@@ -1,5 +1,6 @@
 import { useLiveQuery } from "@tanstack/react-db"
 import { ClientOnly, createFileRoute } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { lofi } from "@/lib/lofi"
 
 export const Route = createFileRoute("/todos")({
@@ -20,11 +21,15 @@ function TodosPage() {
         data: todos,
         isLoading,
         isReady
-    } = useLiveQuery((q) => {
-        const query = q.from({ todo: lofi.collections.todos })
-        // console.log("query", query)
-        return query
-    })
+    } = useLiveQuery((q) => q.from({ todo: lofi.collections.todos }))
+
+    useEffect(() => {
+        const store = lofi.createStore("todos")
+
+        store.state.data?.forEach((todo) => {
+            console.log(todo)
+        })
+    }, [])
 
     if (isLoading) return <div>Loading...</div>
     if (!isReady) return <div>Not ready...</div>
