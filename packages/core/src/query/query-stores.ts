@@ -24,14 +24,14 @@ const queryStores = new Map<string, QueryStore<any[]>>()
 export function createStore<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
-    TQuery extends QueryConfig<TSchema, TTableKey>
+    TQueryConfig extends QueryConfig<TSchema, TTableKey>
 >(
     schema: TSchema,
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQuery
-): QueryStore<InferQueryResult<TSchema, TTableKey, TQuery>[]> {
-    type TQueryResult = InferQueryResult<TSchema, TTableKey, TQuery>[]
+    config?: TQueryConfig
+): QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]> {
+    type TQueryResult = InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
         ? `pglofi:${tableName}:${JSON.stringify(config)}`

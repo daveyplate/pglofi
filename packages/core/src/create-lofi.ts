@@ -1,12 +1,14 @@
 import { Shape, ShapeStream } from "@electric-sql/client"
+import { Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { RxReplicationPullStreamItem } from "rxdb/plugins/core"
 import { replicateRxCollection } from "rxdb/plugins/replication"
 import { Subject } from "rxjs"
+
 import { createCollections } from "./database/create-collections"
 import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
-import { createStore as createStorePrimitive } from "./query/query-stores"
+import { createStore } from "./query/query-stores"
 import type { QueryConfig } from "./query/query-types"
 import {
     filterTableSchema,
@@ -15,8 +17,8 @@ import {
     type TablesOnly
 } from "./utils/schema-filter"
 
-let token: string | undefined
-let syncStarted = false
+const tokenStore = new Store<string | undefined>(undefined)
+const syncStartedStore = new Store(false)
 
 type PullStreams<TSchema extends Record<string, unknown>> = Record<
     TableKey<TSchema>,
@@ -28,12 +30,12 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     startSync: () => void
     createStore: <
         TTableKey extends TableKey<TSchema>,
-        TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
+        TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(
         tableKey?: TTableKey | null | 0 | false | "",
-        query?: TQuery
+        query?: TQueryConfig
     ) => ReturnType<
-        typeof createStorePrimitive<TablesOnly<TSchema>, TTableKey, TQuery>
+        typeof createStore<TablesOnly<TSchema>, TTableKey, TQueryConfig>
     >
     collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
@@ -47,7 +49,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     const resolvedConfig = receiveConfig(config)
 
     if (resolvedConfig.autoStart) {
-        syncStarted = true
+        syncStartedStore.setState(true)
     }
 
     const db = await createDatabase(resolvedConfig)
@@ -64,9 +66,9 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     // Create pull streams for each table
 
     const pullStreams = {} as PullStreams<TSchema>
+    const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
 
     if (!isServer) {
-        const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
         const schemaTableKeys = Object.keys(
             sanitizedSchema
         ) as TableKey<TSchema>[]
@@ -110,8 +112,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
                     params: {
                         table: tableName
                     },
-                    headers: token
-                        ? { Authorization: `Bearer ${token}` }
+                    headers: tokenStore.state
+                        ? { Authorization: `Bearer ${tokenStore.state}` }
                         : undefined
                 })
 
@@ -131,28 +133,17 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         }
     }
 
-    function createStore<
-        TTableKey extends TableKey<TSchema>,
-        TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
-    >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
-        return createStorePrimitive(
-            filterTableSchema(resolvedConfig.schema),
-            collections,
-            tableKey,
-            query
-        )
-    }
-
     return {
-        setToken: (_token: string) => {
-            token = _token
+        setToken: (token: string) => {
+            tokenStore.setState(token)
         },
         startSync: () => {
-            syncStarted = true
+            syncStartedStore.setState(true)
         },
-        createStore,
+        createStore: (tableKey, query) =>
+            createStore(sanitizedSchema, collections, tableKey, query),
         collections,
         pullStreams,
-        syncStarted
+        syncStarted: syncStartedStore.state
     }
 }

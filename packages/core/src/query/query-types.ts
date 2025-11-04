@@ -65,8 +65,8 @@ export type QueryConfig<
 export type InferQueryResult<
     TSchema extends Record<string, AnyPgTable>,
     TTableName extends keyof TSchema,
-    TQuery
-> = TQuery extends { include: infer TInclude }
+    TQueryConfig
+> = TQueryConfig extends { include: infer TInclude }
     ? InferSelectModel<TSchema[TTableName]> &
           InferIncludes<TSchema, TTableName, TInclude>
     : InferSelectModel<TSchema[TTableName]>
