@@ -300,6 +300,13 @@ importers:
         version: 5.1.0
 
   packages/core:
+    dependencies:
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      nanostores:
+        specifier: ^1.0.1
+        version: 1.0.1
     devDependencies:
       '@electric-sql/client':
         specifier: ^1.1.2
@@ -313,6 +320,9 @@ importers:
       '@tanstack/store':
         specifier: ^0.8.0
         version: 0.8.0
+      '@types/lodash':
+        specifier: ^4.17.20
+        version: 4.17.20
       '@types/node':
         specifier: ^24.10.0
         version: 24.10.0

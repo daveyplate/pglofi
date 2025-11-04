@@ -1,13 +1,30 @@
 import { Shape, ShapeStream } from "@electric-sql/client"
+import type { Collection } from "@tanstack/db"
 import { Store } from "@tanstack/store"
-import { getTableName } from "drizzle-orm"
-import type { RxReplicationPullStreamItem } from "rxdb/plugins/core"
+import { getTableName, type InferSelectModel } from "drizzle-orm"
+import isEqual from "lodash/isEqual"
+import {
+    addRxPlugin,
+    type RxReplicationPullStreamItem
+} from "rxdb/plugins/core"
+import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
 import { replicateRxCollection } from "rxdb/plugins/replication"
 import { Subject } from "rxjs"
 
-import { createCollections } from "./database/create-collections"
-import { createDatabase } from "./database/create-database"
-import { type LofiConfig, receiveConfig } from "./database/lofi-config"
+import {
+    collectionsStore,
+    createCollections
+} from "./database/create-collections"
+import {
+    createDatabase,
+    dbStore,
+    destroyDatabase
+} from "./database/create-database"
+import {
+    configStore,
+    type LofiConfig,
+    receiveConfig
+} from "./database/lofi-config"
 import { createQuery } from "./query/create-query"
 import type { QueryConfig } from "./query/query-types"
 import { subscribeQuery } from "./query/subscribe-query"
@@ -46,7 +63,7 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
         query?: TQueryConfig
     ) => () => void
     collections: SchemaCollections<TSchema>
-    pullStreams: PullStreams<TSchema>
+    // pullStreams: PullStreams<TSchema>
     syncStarted: boolean
 }
 
@@ -55,91 +72,130 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 ): Promise<CreateLofiReturn<TSchema>> {
     const isServer = typeof window === "undefined"
     const resolvedConfig = receiveConfig(config)
+    const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
 
     if (resolvedConfig.autoStart) {
         syncStartedStore.setState(true)
     }
 
-    const db = await createDatabase(resolvedConfig)
-
-    // TODO only clear these if there's an error
-    if (!isServer && resolvedConfig.autoResetStorage) {
-        db.storageInstances.forEach((storage) => {
-            storage.remove()
-        })
+    if (!isServer && resolvedConfig.devMode) {
+        addRxPlugin(RxDBDevModePlugin)
     }
 
-    const { collections } = await createCollections(resolvedConfig, db)
+    // Check if something changed in the config and destroy and recreate the db
+    if (configStore.state && dbStore.state) {
+        if (
+            configStore.state.name !== resolvedConfig.name ||
+            configStore.state.storage !== resolvedConfig.storage ||
+            !isEqual(configStore.state.schema, config.schema)
+        ) {
+            await destroyDatabase()
+        }
+    }
 
-    // Create pull streams for each table
+    if (!dbStore.state) {
+        const db = await createDatabase(resolvedConfig)
 
-    const pullStreams = {} as PullStreams<TSchema>
-    const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
+        try {
+            await createCollections(resolvedConfig, db)
+        } catch (error) {
+            console.error(error)
 
-    if (!isServer) {
-        const schemaTableKeys = Object.keys(
-            sanitizedSchema
-        ) as TableKey<TSchema>[]
-
-        for (const tableKey of schemaTableKeys) {
-            const schemaTable = sanitizedSchema[tableKey]
-            const tableName = getTableName(schemaTable)
-
-            if (!(tableName in db.collections)) continue
-
-            const pullStream$ = new Subject<
-                RxReplicationPullStreamItem<unknown, unknown>
-            >()
-            pullStreams[tableKey] = pullStream$
-
-            // Set up replication for each table
-            replicateRxCollection({
-                replicationIdentifier: tableName,
-                collection: db[tableName],
-                autoStart: resolvedConfig.autoStart ?? true,
-                pull: {
-                    handler: async () => {
-                        return { checkpoint: {}, documents: [] }
-                    },
-                    stream$: pullStream$.asObservable()
-                },
-                push: {
-                    handler: async () => {
-                        return []
-                    }
+            if (!isServer && resolvedConfig.autoResetStorage) {
+                for (const storage of db.storageInstances) {
+                    await storage.remove()
                 }
-            })
+            }
 
-            // Set up ShapeStream for each table
-            if (
-                resolvedConfig.shapeURL &&
-                (tableName === "todos" || tableName === "profiles")
-            ) {
-                const stream = new ShapeStream({
-                    url: resolvedConfig.shapeURL,
-                    params: {
-                        table: tableName
+            await createCollections(resolvedConfig, db)
+        }
+
+        // Create pull streams for each table
+
+        const pullStreams = {} as PullStreams<TSchema>
+
+        if (!isServer) {
+            const schemaTableKeys = Object.keys(
+                sanitizedSchema
+            ) as TableKey<TSchema>[]
+
+            for (const tableKey of schemaTableKeys) {
+                const schemaTable = sanitizedSchema[tableKey]
+                const tableName = getTableName(schemaTable)
+
+                if (!(tableName in db.collections)) continue
+
+                const pullStream$ = new Subject<
+                    RxReplicationPullStreamItem<unknown, unknown>
+                >()
+                pullStreams[tableKey] = pullStream$
+
+                // Set up replication for each table
+                replicateRxCollection({
+                    replicationIdentifier: tableName,
+                    collection: db[tableName],
+                    autoStart: resolvedConfig.autoStart ?? true,
+                    pull: {
+                        handler: async () => {
+                            return { checkpoint: {}, documents: [] }
+                        },
+                        stream$: pullStream$.asObservable()
                     },
-                    headers: tokenStore.state
-                        ? { Authorization: `Bearer ${tokenStore.state}` }
-                        : undefined
+                    push: {
+                        handler: async () => {
+                            return []
+                        }
+                    }
                 })
 
-                const shape = new Shape(stream)
-                shape.subscribe((data) => {
-                    // Transform data rows to match the expected format
-                    pullStream$.next({
-                        checkpoint: {},
-                        documents: data.rows.map((row) => ({
-                            id: String(row.id),
-                            ...row,
-                            _deleted: false
-                        }))
+                // Set up ShapeStream for each table
+                if (
+                    resolvedConfig.shapeURL &&
+                    (tableName === "todos" || tableName === "profiles")
+                ) {
+                    const stream = new ShapeStream({
+                        url: resolvedConfig.shapeURL,
+                        params: {
+                            table: tableName
+                        },
+                        headers: tokenStore.state
+                            ? { Authorization: `Bearer ${tokenStore.state}` }
+                            : undefined
                     })
-                })
+
+                    const shape = new Shape(stream)
+                    shape.subscribe((data) => {
+                        // Transform data rows to match the expected format
+                        pullStream$.next({
+                            checkpoint: {},
+                            documents: data.rows.map((row) => ({
+                                id: String(row.id),
+                                ...row,
+                                _deleted: false
+                            }))
+                        })
+                    })
+                }
             }
         }
     }
+
+    configStore.setState(resolvedConfig)
+
+    // Entity type includes RxDB metadata fields
+    type EntityWithMetadata<T> = T & {
+        id: string
+        isPending?: boolean
+    }
+
+    type CollectionsReturn = {
+        [K in keyof TablesOnly<TSchema>]: Collection<
+            EntityWithMetadata<InferSelectModel<TablesOnly<TSchema>[K]>>,
+            string
+        >
+    }
+
+    const collections = collectionsStore.state as CollectionsReturn
 
     return {
         setToken: (token: string) => {
@@ -153,7 +209,6 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         subscribeQuery: (tableKey, query) =>
             subscribeQuery(sanitizedSchema, collections, tableKey, query),
         collections,
-        pullStreams,
         syncStarted: syncStartedStore.state
     }
 }

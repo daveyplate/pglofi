@@ -32,6 +32,7 @@ export function createQuery<
     config?: TQueryConfig
 ): QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]> {
     type TQueryResult = InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
+
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
         ? `pglofi:${tableName}:${JSON.stringify(config)}`

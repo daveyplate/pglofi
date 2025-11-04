@@ -1,40 +1,44 @@
-import { type Collection, createCollection } from "@tanstack/db"
+import {
+    type Collection,
+    createCollection,
+    type UtilsRecord
+} from "@tanstack/db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
-import type { InferSelectModel } from "drizzle-orm"
+import { Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { MigrationStrategies, RxCollectionCreator, RxDatabase } from "rxdb"
-import { filterTableSchema, type TablesOnly } from "../utils/schema-filter"
+import {
+    filterTableSchema,
+    type TableKey,
+    type TablesOnly
+} from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
+import { configStore } from "./lofi-config"
 
-// Entity type includes RxDB metadata fields
-type EntityWithMetadata<T> = T & {
-    id: string
-    isPending?: boolean
-}
+// Add type annotation to collectionsStore to avoid the inferred type warning
+export const collectionsStore: Store<
+    // biome-ignore lint/suspicious/noExplicitAny: ignore
+    Record<string, Collection<any, string, UtilsRecord, never, any>>
+> = new Store({})
 
 export async function createCollections<
     TSchema extends Record<string, unknown>
->(
-    config: LofiConfig<TSchema>,
-    db: RxDatabase
-): Promise<{
-    collections: {
-        [K in keyof TablesOnly<TSchema>]: Collection<
-            EntityWithMetadata<InferSelectModel<TablesOnly<TSchema>[K]>>,
-            string
-        >
-    }
-}> {
+>(config: LofiConfig<TSchema>, db: RxDatabase) {
     const sanitizedSchema = filterTableSchema(
         config.schema
     ) as TablesOnly<TSchema>
-    const schemaTableKeys = Object.keys(
-        sanitizedSchema
-    ) as (keyof TablesOnly<TSchema>)[]
+    const previousSchema = configStore.state?.schema
+    const schemaTableKeys = Object.keys(sanitizedSchema) as TableKey<TSchema>[]
     const collections = {} as Record<string, RxCollectionCreator>
 
     schemaTableKeys.forEach((tableKey) => {
         const schemaTable = sanitizedSchema[tableKey]
+        if (previousSchema?.[tableKey] === schemaTable) {
+            console.log("Schema has not changed, skipping collection creation")
+        } else {
+            console.log("Schema has changed, creating new collection")
+        }
+
         const tableName = getTableName(schemaTable)
 
         collections[tableName] = {
@@ -139,21 +143,7 @@ export async function createCollections<
 
     await db.addCollections(collections)
 
-    // Create tanstackdb collections for each table key
-    // Use a mapped type approach to preserve literal types
-    type CollectionsReturn = {
-        [K in keyof TablesOnly<TSchema>]: Collection<
-            EntityWithMetadata<InferSelectModel<TablesOnly<TSchema>[K]>>,
-            string
-        >
-    }
-
-    const tanstackCollections = {} as CollectionsReturn
-
-    // Helper function to create a typed collection for a specific table key
-    function createTypedCollection<K extends keyof TablesOnly<TSchema>>(
-        tableKey: K
-    ): CollectionsReturn[K] {
+    for (const tableKey of schemaTableKeys) {
         const tableName = getTableName(sanitizedSchema[tableKey])
         const tableCollection = createCollection(
             rxdbCollectionOptions({
@@ -161,14 +151,10 @@ export async function createCollections<
                 startSync: true
             })
         )
-        return tableCollection as CollectionsReturn[K]
-    }
 
-    for (const tableKey of schemaTableKeys) {
-        tanstackCollections[tableKey] = createTypedCollection(tableKey)
-    }
-
-    return {
-        collections: tanstackCollections
+        collectionsStore.setState((prevState) => ({
+            ...prevState,
+            [tableName]: tableCollection
+        }))
     }
 }

@@ -1,4 +1,9 @@
+import { Store } from "@tanstack/store"
 import type { RxCollection, RxStorage } from "rxdb"
+
+export const configStore = new Store<
+    LofiConfig<Record<string, unknown>> | undefined
+>(undefined)
 
 export type LofiConfig<TSchema extends Record<string, unknown>> = {
     name?: string

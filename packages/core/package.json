@@ -4,7 +4,7 @@
     "description": "",
     "type": "module",
     "scripts": {
-        "dev": "vite build && vite build --watch",
+        "dev": "tsc --watch",
         "build": "vite build"
     },
     "files": [
@@ -28,6 +28,7 @@
         "@tanstack/db": "^0.4.17",
         "@tanstack/rxdb-db-collection": "^0.1.28",
         "@tanstack/store": "^0.8.0",
+        "@types/lodash": "^4.17.20",
         "@types/node": "^24.10.0",
         "drizzle-orm": "^0.44.7",
         "rxdb": "^16.20.0",
@@ -43,5 +44,9 @@
         "@tanstack/store": ">=0.8.0",
         "rxdb": ">=16.20.0",
         "rxjs": ">=7.8.0"
+    },
+    "dependencies": {
+        "lodash": "^4.17.21",
+        "nanostores": "^1.0.1"
     }
 }
