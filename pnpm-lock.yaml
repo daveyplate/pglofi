@@ -294,6 +294,10 @@ importers:
         version: 5.1.0
 
   packages/core:
+    dependencies:
+      '@tanstack/store':
+        specifier: ^0.8.0
+        version: 0.8.0
     devDependencies:
       '@electric-sql/client':
         specifier: ^1.1.1

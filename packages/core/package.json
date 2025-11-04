@@ -40,5 +40,8 @@
         "@tanstack/rxdb-db-collection": "^0.1.27",
         "rxdb": "^16.20.0",
         "rxjs": "^7.8.2"
+    },
+    "dependencies": {
+        "@tanstack/store": "^0.8.0"
     }
 }

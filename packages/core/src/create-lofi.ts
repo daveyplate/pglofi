@@ -1,15 +1,21 @@
 import { Shape, ShapeStream } from "@electric-sql/client"
-import type { Collection } from "@tanstack/db"
-import type { InferSelectModel } from "drizzle-orm"
 import { getTableName } from "drizzle-orm"
 import type { RxReplicationPullStreamItem } from "rxdb/plugins/core"
 import { replicateRxCollection } from "rxdb/plugins/replication"
 import { Subject } from "rxjs"
-
 import { createCollections } from "./database/create-collections"
 import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
-import { filterTableSchema, type TablesOnly } from "./utils/schema-filter"
+import {
+    createQuery as createQueryPrimitive,
+    type QueryStore
+} from "./query/create-query"
+import type { QueryConfig } from "./query/query-types"
+import {
+    filterTableSchema,
+    type SchemaCollections,
+    type TablesOnly
+} from "./utils/schema-filter"
 
 let token: string | undefined
 let syncStarted = false
@@ -23,15 +29,14 @@ type PullStreams<TSchema extends Record<string, unknown>> = {
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     setToken: (token: string) => void
     startSync: () => void
-    collections: {
-        [K in keyof TablesOnly<TSchema>]: Collection<
-            InferSelectModel<TablesOnly<TSchema>[K]> & {
-                id: string
-                isPending?: boolean
-            },
-            string
-        >
-    }
+    createQuery: <
+        TTableKey extends keyof TablesOnly<TSchema>,
+        TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
+    >(
+        tableKey?: TTableKey | null | 0 | false | "",
+        query?: TQuery
+    ) => QueryStore
+    collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
     syncStarted: boolean
 }
@@ -124,6 +129,18 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         }
     }
 
+    function createQuery<
+        TTableKey extends keyof TablesOnly<TSchema>,
+        TQuery extends QueryConfig<TablesOnly<TSchema>, TTableKey>
+    >(tableKey?: TTableKey | null | 0 | false | "", query?: TQuery) {
+        return createQueryPrimitive(
+            filterTableSchema(resolvedConfig.schema),
+            collections,
+            tableKey,
+            query
+        )
+    }
+
     return {
         setToken: (_token: string) => {
             token = _token
@@ -131,6 +148,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         startSync: () => {
             syncStarted = true
         },
+        createQuery,
         collections,
         pullStreams,
         syncStarted
