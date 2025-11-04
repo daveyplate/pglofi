@@ -8,7 +8,7 @@ import { Subject } from "rxjs"
 import { createCollections } from "./database/create-collections"
 import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
-import { createStore } from "./query/query-stores"
+import { createQuery } from "./query/create-query"
 import type { QueryConfig } from "./query/query-types"
 import {
     filterTableSchema,
@@ -28,14 +28,14 @@ type PullStreams<TSchema extends Record<string, unknown>> = Record<
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     setToken: (token: string) => void
     startSync: () => void
-    createStore: <
+    createQuery: <
         TTableKey extends TableKey<TSchema>,
         TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(
         tableKey?: TTableKey | null | 0 | false | "",
         query?: TQueryConfig
     ) => ReturnType<
-        typeof createStore<TablesOnly<TSchema>, TTableKey, TQueryConfig>
+        typeof createQuery<TablesOnly<TSchema>, TTableKey, TQueryConfig>
     >
     collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
@@ -140,8 +140,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         startSync: () => {
             syncStartedStore.setState(true)
         },
-        createStore: (tableKey, query) =>
-            createStore(sanitizedSchema, collections, tableKey, query),
+        createQuery: (tableKey, query) =>
+            createQuery(sanitizedSchema, collections, tableKey, query),
         collections,
         pullStreams,
         syncStarted: syncStartedStore.state

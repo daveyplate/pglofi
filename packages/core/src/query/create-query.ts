@@ -21,7 +21,7 @@ export type QueryStore<TData = unknown[]> = Store<
 // biome-ignore lint/suspicious/noExplicitAny: we need to store any[] in the map
 const queryStores = new Map<string, QueryStore<any[]>>()
 
-export function createStore<
+export function createQuery<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
     TQueryConfig extends QueryConfig<TSchema, TTableKey>

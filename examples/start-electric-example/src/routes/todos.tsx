@@ -24,7 +24,7 @@ function TodosPage() {
     } = useLiveQuery((q) => q.from({ todo: lofi.collections.todos }))
 
     useEffect(() => {
-        const store = lofi.createStore("todos", {
+        const store = lofi.createQuery("todos", {
             include: { user: "profiles" }
         })
 
