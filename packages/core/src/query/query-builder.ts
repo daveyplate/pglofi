@@ -18,9 +18,9 @@ import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 
 import { type FKInfo, getFKInfo } from "../utils/fk-helpers"
-import { normalizeSortConfig } from "../utils/order-helpers"
+import { applySortToArray, normalizeSortConfig } from "../utils/order-helpers"
 import type { SchemaCollections } from "../utils/schema-filter"
-import type { QueryConfig } from "./query-types"
+import type { QueryConfig, SortConfig } from "./query-types"
 import {
     getOperatorAndValue,
     isLogicalOperator,
@@ -300,7 +300,8 @@ export function buildQuery<
     tableKey: TTableKey,
     query?: QueryConfig<TSchema, TTableKey>,
     parentAlias?: string,
-    isRoot = true
+    isRoot = true,
+    existingQuery?: unknown
 ): QueryBuilder<Context> {
     // Derive table name from table key
     const tableName = getTableName(schema[tableKey])
@@ -317,11 +318,16 @@ export function buildQuery<
         )
     }
 
-    // Create base query builder
-    const baseQuery = new BaseQueryBuilder()
-    let currentQuery = baseQuery.from({
-        [alias]: tableCollection
-    }) as QueryBuilder<Context>
+    // Create base query builder or use existing query
+    let currentQuery: QueryBuilder<Context>
+    if (existingQuery) {
+        currentQuery = existingQuery as QueryBuilder<Context>
+    } else {
+        const baseQuery = new BaseQueryBuilder()
+        currentQuery = baseQuery.from({
+            [alias]: tableCollection
+        }) as QueryBuilder<Context>
+    }
 
     // Apply selector conditions (for both root and joins)
     if (query?.selector) {
@@ -387,16 +393,198 @@ export function buildQuery<
             ) as QueryBuilder<Context>
 
             // Recursively handle this relation's selector conditions and nested includes
+            // Pass currentQuery to continue building on the existing query
             currentQuery = buildQuery(
                 schema,
                 collections,
                 config.from as keyof TSchema,
                 config as QueryConfig<TSchema, keyof TSchema>,
                 relatedAlias,
-                false
+                false,
+                currentQuery
             )
         }
     }
 
     return currentQuery
+}
+
+/**
+ * Converts flat join results to hierarchical format.
+ * Groups related data by parent ID and applies limits/skips to one-to-many relations.
+ */
+export function flatToHierarchical<
+    TSchema extends Record<string, AnyPgTable>,
+    TTableKey extends keyof TSchema
+>(
+    schema: TSchema,
+    flatResults: TableRecord[],
+    parentTableKey: TTableKey,
+    parentAlias: string,
+    query?: QueryConfig<TSchema, TTableKey>
+): TableRecord[] {
+    // If no includes, data is not aliased - return as-is
+    if (!query?.include || flatResults.length === 0) {
+        return flatResults
+    }
+
+    // Group by parent ID
+    const parentMap = new Map<string | number, TableRecord>()
+
+    for (const row of flatResults) {
+        const parent = row[parentAlias]
+        if (!parent) continue
+
+        const parentId = (parent as TableRecord & { id: string | number }).id
+        let parentEntry = parentMap.get(parentId)
+
+        if (!parentEntry) {
+            // Clone parent and initialize include properties
+            parentEntry = { ...parent }
+            parentMap.set(parentId, parentEntry)
+
+            // Initialize include properties
+            for (const [relationName, relationConfig] of Object.entries(
+                query.include
+            )) {
+                const config =
+                    typeof relationConfig === "string"
+                        ? { from: relationConfig }
+                        : relationConfig
+                const fkInfo = getFKInfo(schema, parentTableKey, config)
+
+                // Initialize as array for one-to-many, null for many-to-one
+                parentEntry[relationName] = fkInfo.isOneToMany ? [] : null
+            }
+        }
+
+        // Process each include
+        for (const [relationName, relationConfig] of Object.entries(
+            query.include
+        )) {
+            const config: {
+                from: string
+                include?: unknown
+                selector?: unknown
+                many?: boolean
+                limit?: number
+                skip?: number
+                sort?: SortConfig<AnyPgTable>
+                localField?: string
+                foreignField?: string
+            } =
+                typeof relationConfig === "string"
+                    ? { from: relationConfig }
+                    : (relationConfig as {
+                          from: string
+                          include?: unknown
+                          selector?: unknown
+                          many?: boolean
+                          limit?: number
+                          skip?: number
+                          sort?: SortConfig<AnyPgTable>
+                          localField?: string
+                          foreignField?: string
+                      })
+
+            const relatedAlias: string = `${parentAlias}_${relationName}`
+            const relatedData = row[relatedAlias]
+
+            if (!relatedData) continue
+
+            const fkInfo = getFKInfo(schema, parentTableKey, config)
+
+            // Recursively process nested includes
+            let processedRelated = relatedData
+            if (config.include) {
+                // For nested includes, construct a synthetic row with the related data as parent
+                const syntheticRow: TableRecord = {
+                    [relatedAlias]: relatedData
+                }
+
+                // Copy any nested relation data from the original row
+                for (const nestedRelationName of Object.keys(
+                    config.include as Record<string, unknown>
+                )) {
+                    const nestedAlias: string = `${relatedAlias}_${nestedRelationName}`
+                    if (row[nestedAlias]) {
+                        syntheticRow[nestedAlias] = row[nestedAlias]
+                    }
+                }
+
+                const nestedResults = flatToHierarchical(
+                    schema,
+                    [syntheticRow],
+                    config.from as keyof TSchema,
+                    relatedAlias,
+                    config as QueryConfig<TSchema, keyof TSchema>
+                )
+                processedRelated = nestedResults[0] || relatedData
+            }
+
+            if (fkInfo.isOneToMany) {
+                // One-to-many: add to array if not already present
+                const relationArray = parentEntry[relationName] as TableRecord[]
+                const processedRelatedRecord = processedRelated as TableRecord
+                const existingIndex = relationArray.findIndex(
+                    (item: TableRecord) => item.id === processedRelatedRecord.id
+                )
+                if (existingIndex === -1) {
+                    relationArray.push(processedRelatedRecord)
+                }
+            } else {
+                // Many-to-one: set as single object
+                parentEntry[relationName] = processedRelated
+            }
+        }
+    }
+
+    // Apply sort, limit, and skip to one-to-many relations after grouping
+    for (const parentEntry of parentMap.values()) {
+        for (const [relationName, relationConfig] of Object.entries(
+            query.include
+        )) {
+            const config =
+                typeof relationConfig === "string"
+                    ? { from: relationConfig }
+                    : relationConfig
+
+            const fkInfo = getFKInfo(schema, parentTableKey, config)
+
+            if (
+                fkInfo.isOneToMany &&
+                Array.isArray(parentEntry[relationName])
+            ) {
+                let relationArray = parentEntry[relationName] as TableRecord[]
+
+                const hasExplicitSort = config.sort !== undefined
+
+                // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
+                const sortToApply: SortConfig<AnyPgTable> = hasExplicitSort
+                    ? config.sort!
+                    : ["id"]
+                const relatedTable = schema[config.from as keyof TSchema]
+                relationArray = applySortToArray(
+                    relationArray,
+                    sortToApply,
+                    relatedTable
+                )
+
+                // Apply skip and limit
+                const startIndex = config.skip || 0
+                const endIndex =
+                    config.limit !== undefined
+                        ? startIndex + config.limit
+                        : undefined
+
+                if (startIndex > 0 || endIndex !== undefined) {
+                    relationArray = relationArray.slice(startIndex, endIndex)
+                }
+
+                parentEntry[relationName] = relationArray
+            }
+        }
+    }
+
+    return Array.from(parentMap.values())
 }

@@ -92,3 +92,56 @@ export function normalizeSortConfig<TTable extends AnyPgTable>(
 
     return normalized
 }
+
+/**
+ * Applies sort configuration to an array of records (for post-processing one-to-many relations).
+ * Used by flatToHierarchical to sort relation arrays after grouping.
+ */
+export function applySortToArray<T extends Record<string, unknown>>(
+    records: T[],
+    sortConfig: SortConfig<AnyPgTable>,
+    table?: AnyPgTable
+): T[] {
+    const orders = normalizeSortConfig(sortConfig, table, true)
+    const sorted = [...records]
+
+    sorted.sort((a, b) => {
+        for (const { column, ascending, stringSort } of orders) {
+            const aVal = a[column]
+            const bVal = b[column]
+
+            if (aVal === bVal) continue
+
+            // Nulls sort last (Postgres default)
+            if (aVal === null || aVal === undefined) return 1
+            if (bVal === null || bVal === undefined) return -1
+
+            let comparison = 0
+
+            // Handle string sorting with strategy
+            if (
+                typeof aVal === "string" &&
+                typeof bVal === "string" &&
+                stringSort
+            ) {
+                if (stringSort === "locale") {
+                    // Locale-aware (case-insensitive) comparison for citext
+                    comparison = aVal.localeCompare(bVal)
+                } else {
+                    // Lexical (case-sensitive) comparison for text
+                    comparison = aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+                }
+            } else {
+                // Non-string comparison (numbers, dates, etc.)
+                comparison = aVal < bVal ? -1 : 1
+            }
+
+            if (comparison !== 0) {
+                return ascending ? comparison : -comparison
+            }
+        }
+        return 0
+    })
+
+    return sorted
+}

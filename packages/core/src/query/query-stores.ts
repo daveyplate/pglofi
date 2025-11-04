@@ -3,7 +3,7 @@ import { type AnyUpdater, Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import type { SchemaCollections } from "../utils/schema-filter"
-import { buildQuery } from "./query-builder"
+import { buildQuery, flatToHierarchical } from "./query-builder"
 import type { InferQueryResult, QueryConfig } from "./query-types"
 
 export type QueryResult<TData = unknown[]> = {
@@ -38,7 +38,7 @@ export function createStore<
         : `pglofi:default`
 
     if (queryStores.has(queryKey)) {
-        return queryStores.get(queryKey) as QueryStore<TQueryResult>
+        return queryStores.get(queryKey)!
     }
 
     let data: TQueryResult = []
@@ -52,7 +52,18 @@ export function createStore<
             })
         )
 
-        data = queryCollection.toArray as TQueryResult
+        const rawData = queryCollection.toArray
+
+        // Transform flat joined results into hierarchical structure
+        const hierarchicalData = flatToHierarchical(
+            schema,
+            rawData,
+            tableKey,
+            tableName!,
+            config
+        )
+
+        data = hierarchicalData as TQueryResult
 
         queryCollection.cleanup()
     }
