@@ -4,18 +4,22 @@ import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import type { SchemaCollections } from "../utils/schema-filter"
 import { buildQuery } from "./query-builder"
-import type { QueryConfig } from "./query-types"
+import type { InferQueryResult, QueryConfig } from "./query-types"
 
-export type QueryResult = {
+export type QueryResult<TData = unknown[]> = {
     isPending: boolean
-    data?: unknown[] | null
+    data: TData
     error?: Error
     refetch?: () => void
 }
 
-export type QueryStore = Store<QueryResult, AnyUpdater>
+export type QueryStore<TData = unknown[]> = Store<
+    QueryResult<TData>,
+    AnyUpdater
+>
 
-const queryStores = new Map<string, QueryStore>()
+// biome-ignore lint/suspicious/noExplicitAny: we need to store any[] in the map
+const queryStores = new Map<string, QueryStore<any[]>>()
 
 export function createStore<
     TSchema extends Record<string, AnyPgTable>,
@@ -26,17 +30,19 @@ export function createStore<
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: TQuery
-): QueryStore {
+): QueryStore<InferQueryResult<TSchema, TTableKey, TQuery>[]> {
+    type TQueryResult = InferQueryResult<TSchema, TTableKey, TQuery>[]
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
         ? `pglofi:${tableName}:${JSON.stringify(config)}`
         : `pglofi:default`
 
     if (queryStores.has(queryKey)) {
-        return queryStores.get(queryKey) as QueryStore
+        return queryStores.get(queryKey) as QueryStore<TQueryResult>
     }
 
-    let data: unknown[] | undefined
+    let data: TQueryResult = []
+
     if (tableKey) {
         const query = buildQuery(schema, collections, tableKey, config)
         const queryCollection = createCollection(
@@ -46,13 +52,13 @@ export function createStore<
             })
         )
 
-        data = queryCollection.toArray
+        data = queryCollection.toArray as TQueryResult
 
         queryCollection.cleanup()
     }
 
-    const store = new Store<QueryResult, AnyUpdater>({
-        isPending: !data,
+    const store = new Store({
+        isPending: !data?.length,
         data
     })
 

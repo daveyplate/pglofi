@@ -24,11 +24,11 @@ function TodosPage() {
     } = useLiveQuery((q) => q.from({ todo: lofi.collections.todos }))
 
     useEffect(() => {
-        const store = lofi.createStore("todos")
-
-        store.state.data?.forEach((todo) => {
-            console.log(todo)
+        const store = lofi.createStore("todos", {
+            include: { user: "profiles" }
         })
+
+        console.log(store.state.data)
     }, [])
 
     if (isLoading) return <div>Loading...</div>

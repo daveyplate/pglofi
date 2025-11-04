@@ -6,10 +6,7 @@ import { Subject } from "rxjs"
 import { createCollections } from "./database/create-collections"
 import { createDatabase } from "./database/create-database"
 import { type LofiConfig, receiveConfig } from "./database/lofi-config"
-import {
-    createStore as createStorePrimitive,
-    type QueryStore
-} from "./query/query-stores"
+import { createStore as createStorePrimitive } from "./query/query-stores"
 import type { QueryConfig } from "./query/query-types"
 import {
     filterTableSchema,
@@ -35,7 +32,9 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     >(
         tableKey?: TTableKey | null | 0 | false | "",
         query?: TQuery
-    ) => QueryStore
+    ) => ReturnType<
+        typeof createStorePrimitive<TablesOnly<TSchema>, TTableKey, TQuery>
+    >
     collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
     syncStarted: boolean
@@ -102,7 +101,10 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
             })
 
             // Set up ShapeStream for each table
-            if (resolvedConfig.shapeURL && tableName === "todos") {
+            if (
+                resolvedConfig.shapeURL &&
+                (tableName === "todos" || tableName === "profiles")
+            ) {
                 const stream = new ShapeStream({
                     url: resolvedConfig.shapeURL,
                     params: {
