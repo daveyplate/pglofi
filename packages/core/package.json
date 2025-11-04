@@ -27,6 +27,7 @@
         "@electric-sql/client": "^1.1.2",
         "@tanstack/db": "^0.4.17",
         "@tanstack/rxdb-db-collection": "^0.1.28",
+        "@tanstack/store": "^0.8.0",
         "@types/node": "^24.10.0",
         "drizzle-orm": "^0.44.7",
         "rxdb": "^16.20.0",
@@ -36,13 +37,11 @@
         "vite-plugin-dts": "^4.5.4"
     },
     "peerDependencies": {
-        "@electric-sql/client": "^1.1.1",
-        "@tanstack/db": "^0.4.16",
-        "@tanstack/rxdb-db-collection": "^0.1.27",
-        "rxdb": "^16.20.0",
-        "rxjs": "^7.8.2"
-    },
-    "dependencies": {
-        "@tanstack/store": "^0.8.0"
+        "@electric-sql/client": ">=1.1.0",
+        "@tanstack/db": ">=0.4.16",
+        "@tanstack/rxdb-db-collection": ">=0.1.27",
+        "@tanstack/store": ">=0.8.0",
+        "rxdb": ">=16.20.0",
+        "rxjs": ">=7.8.0"
     }
 }
