@@ -1,8 +1,6 @@
 import {
     createQuery,
-    type InferQueryResult,
     type QueryConfig,
-    type QueryResult,
     type SchemaCollections,
     subscribeQuery
 } from "@pglofi/core"
@@ -21,7 +19,7 @@ export function useQuery<
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: TQueryConfig
-): QueryResult<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]> {
+) {
     const hydrated = useHydrated()
 
     const queryStore = createQuery(
