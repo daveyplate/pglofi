@@ -22,7 +22,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
             sanitizedSchema,
             lofi.collections,
             tableKey,
-            query
+            query,
+            lofi.subscribeQuery
         )
     }
 

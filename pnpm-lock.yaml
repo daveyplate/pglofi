@@ -153,6 +153,9 @@ importers:
       '@pglofi/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pglofi/postgrest':
+        specifier: workspace:*
+        version: link:../../packages/postgrest
       '@pglofi/react':
         specifier: workspace:*
         version: link:../../packages/react

@@ -1,8 +1,7 @@
 import {
     createQuery,
     type QueryConfig,
-    type SchemaCollections,
-    subscribeQuery
+    type SchemaCollections
 } from "@pglofi/core"
 import { useStore } from "@tanstack/react-store"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
@@ -18,7 +17,14 @@ export function useQuery<
     schema: TSchema,
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQueryConfig
+    config?: TQueryConfig,
+    subscribeQueryFn?: <
+        TTableKeyInner extends keyof TSchema,
+        TQueryConfigInner extends QueryConfig<TSchema, TTableKeyInner>
+    >(
+        tableKey?: TTableKeyInner | null | 0 | false | "",
+        query?: TQueryConfigInner
+    ) => () => void
 ) {
     const hydrated = useHydrated()
 
@@ -31,14 +37,9 @@ export function useQuery<
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: schema and collections are stable
     useEffect(() => {
-        if (!tableKey) return
+        if (!tableKey || !subscribeQueryFn) return
 
-        const unsubscribe = subscribeQuery(
-            schema,
-            collections,
-            tableKey,
-            config
-        )
+        const unsubscribe = subscribeQueryFn(tableKey, config)
         return unsubscribe
     }, [tableKey, JSON.stringify(config)])
 

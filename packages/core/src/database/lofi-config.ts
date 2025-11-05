@@ -1,5 +1,7 @@
 import { Store } from "@tanstack/store"
 import type { RxCollection, RxStorage } from "rxdb"
+import type { LofiPlugin } from "../plugin/lofi-plugin"
+import type { TablesOnly } from "../utils/schema-filter"
 
 export const configStore = new Store<
     LofiConfig<Record<string, unknown>> | undefined
@@ -15,6 +17,7 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
     token?: string
     autoResetStorage?: boolean
     version?: number
+    plugins?: LofiPlugin<TablesOnly<TSchema>>[]
     migrationStrategy?: (
         table: string,
         version: number,

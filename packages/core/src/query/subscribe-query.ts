@@ -1,6 +1,7 @@
 import { createCollection, liveQueryCollectionOptions } from "@tanstack/db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import type { LofiPlugin } from "../plugin/lofi-plugin"
 import type { SchemaCollections } from "../utils/schema-filter"
 import { createQuery } from "./create-query"
 import { buildQuery, flatToHierarchical } from "./query-builder"
@@ -14,7 +15,8 @@ export function subscribeQuery<
     schema: TSchema,
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQueryConfig
+    config?: TQueryConfig,
+    plugins?: LofiPlugin<TSchema>[]
 ) {
     if (!tableKey) return () => {}
 
@@ -63,8 +65,22 @@ export function subscribeQuery<
 
     queryCollection.startSyncImmediate()
 
+    const pluginCleanups: Array<() => void> = []
+    if (plugins) {
+        for (const plugin of plugins) {
+            if (plugin.sync) {
+                const cleanup = plugin.sync(schema, tableKey, config)
+                pluginCleanups.push(cleanup)
+            }
+        }
+    }
+
     return () => {
         subscription.unsubscribe()
         queryCollection.cleanup()
+
+        for (const cleanup of pluginCleanups) {
+            cleanup()
+        }
     }
 }

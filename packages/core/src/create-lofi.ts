@@ -156,7 +156,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         }
     }
 
-    configStore.setState(resolvedConfig)
+    configStore.setState(resolvedConfig as LofiConfig<Record<string, unknown>>)
 
     // Entity type includes RxDB metadata fields
     type EntityWithMetadata<T> = T & {
@@ -186,7 +186,13 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         createQuery: (tableKey, query) =>
             createQuery(sanitizedSchema, collections, tableKey, query),
         subscribeQuery: (tableKey, query) =>
-            subscribeQuery(sanitizedSchema, collections, tableKey, query),
+            subscribeQuery(
+                sanitizedSchema,
+                collections,
+                tableKey,
+                query,
+                resolvedConfig.plugins
+            ),
         collections,
         pullStreams,
         replicationStates,

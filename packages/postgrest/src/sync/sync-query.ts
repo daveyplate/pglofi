@@ -1,31 +1,38 @@
-import { getQuery, type InferQueryResult, type QueryConfig } from "@pglofi/core"
+import type { QueryConfig } from "@pglofi/core"
 import { QueryClient, QueryObserver } from "@tanstack/query-core"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 
-const queryClient = new QueryClient()
+const defaultQueryClient = new QueryClient()
 
 export function syncQuery<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
     TQueryConfig extends QueryConfig<TSchema, TTableKey>
->(schema: TSchema, tableKey: TTableKey, config?: TQueryConfig) {
-    type TQueryResult = InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
+>(
+    schema: TSchema,
+    tableKey: TTableKey,
+    config?: TQueryConfig,
+    queryClient?: QueryClient
+) {
+    console.log("[PostgrestSync] syncing query", { tableKey, config })
 
-    const queryStore = getQuery(schema, tableKey, config)
+    const client = queryClient ?? defaultQueryClient
+    client.mount()
 
-    const observer = new QueryObserver(queryClient, {
+    const observer = new QueryObserver(client, {
         queryKey: ["posts"],
         queryFn: () => {
             console.log("QUERY!!")
+            return []
         }
     })
 
     const unsubscribe = observer.subscribe((result) => {
         console.log(result)
-        unsubscribe()
     })
 
     return () => {
+        console.log("[PostgrestSync] cleaning up sync for", tableKey)
         unsubscribe()
     }
 }
