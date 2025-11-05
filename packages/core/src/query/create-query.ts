@@ -22,6 +22,23 @@ export type QueryStore<TData = unknown[]> = Store<
 // biome-ignore lint/suspicious/noExplicitAny: we need to store any[] in the map
 const queryStores = new Map<string, QueryStore<any[]>>()
 
+export function getQuery<
+    TSchema extends Record<string, AnyPgTable>,
+    TTableKey extends keyof TSchema,
+    TQueryConfig extends QueryConfig<TSchema, TTableKey>
+>(
+    schema: TSchema,
+    tableKey?: TTableKey | null | 0 | false | "",
+    config?: TQueryConfig
+) {
+    const tableName = tableKey ? getTableName(schema[tableKey]) : null
+    const queryKey = tableName
+        ? `pglofi:${tableName}:${JSON.stringify(config)}`
+        : `pglofi:default`
+
+    queryStores.get(queryKey)
+}
+
 export function createQuery<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,

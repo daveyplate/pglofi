@@ -24,6 +24,7 @@
     "author": "daveycodez",
     "license": "MIT",
     "devDependencies": {
+        "@tanstack/query-core": "^5.90.6",
         "@types/node": "^24.10.0",
         "drizzle-orm": "^0.44.7",
         "typescript": "^5.9.3",
@@ -31,6 +32,7 @@
         "vite-plugin-dts": "^4.5.4"
     },
     "peerDependencies": {
-        "@pglofi/core": "workspace:*"
+        "@pglofi/core": "workspace:*",
+        "@tanstack/query-core": ">=5.90.0"
     }
 }
