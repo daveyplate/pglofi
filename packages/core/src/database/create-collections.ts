@@ -13,7 +13,6 @@ import {
     type TablesOnly
 } from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
-import { configStore } from "./lofi-config"
 
 // Add type annotation to collectionsStore to avoid the inferred type warning
 export const collectionsStore: Store<
@@ -27,17 +26,11 @@ export async function createCollections<
     const sanitizedSchema = filterTableSchema(
         config.schema
     ) as TablesOnly<TSchema>
-    const previousSchema = configStore.state?.schema
     const schemaTableKeys = Object.keys(sanitizedSchema) as TableKey<TSchema>[]
     const collections = {} as Record<string, RxCollectionCreator>
 
     schemaTableKeys.forEach((tableKey) => {
         const schemaTable = sanitizedSchema[tableKey]
-        if (previousSchema?.[tableKey] === schemaTable) {
-            console.log("Schema has not changed, skipping collection creation")
-        } else {
-            console.log("Schema has changed, creating new collection")
-        }
 
         const tableName = getTableName(schemaTable)
 
