@@ -47,14 +47,15 @@ export function subscribeQuery<
         )
 
         // Update the store with the new data
-        queryStore.setState({
+        queryStore.setState((prev) => ({
+            ...prev,
             isPending: !hierarchicalData.length,
             data: hierarchicalData as InferQueryResult<
                 TSchema,
                 TTableKey,
                 TQueryConfig
             >[]
-        })
+        }))
     }
 
     queryCollection.onFirstReady(updateStore)
