@@ -1,4 +1,4 @@
-import { createLofi } from "@pglofi/core"
+import { createLofi } from "@pglofi/react"
 import * as schema from "@/database/schema"
 
 export const lofi = await createLofi({

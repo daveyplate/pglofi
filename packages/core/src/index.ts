@@ -1,2 +1,6 @@
 export * from "./create-lofi"
 export * from "./query/create-query"
+export * from "./query/subscribe-query"
+export * from "./query/query-types"
+export * from "./utils/schema-filter"
+export * from "./database/lofi-config"

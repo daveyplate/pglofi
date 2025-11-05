@@ -153,6 +153,9 @@ importers:
       '@pglofi/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@pglofi/react':
+        specifier: workspace:*
+        version: link:../../packages/react
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.16
         version: 2.1.16(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -415,6 +418,16 @@ importers:
         version: 5.9.3
 
   packages/react:
+    dependencies:
+      '@pglofi/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tanstack/react-store':
+        specifier: '>=0.8.0'
+        version: 0.8.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      react:
+        specifier: '>=18.0.0'
+        version: 19.2.0
     devDependencies:
       '@electric-sql/client':
         specifier: ^1.1.2
@@ -434,6 +447,9 @@ importers:
       '@types/node':
         specifier: ^24.10.0
         version: 24.10.0
+      '@types/react':
+        specifier: ^19.2.2
+        version: 19.2.2
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@neondatabase/serverless@1.0.2)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.1)(kysely@0.28.8)(pg@8.16.3)(prisma@5.22.0)
