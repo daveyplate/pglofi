@@ -24,31 +24,18 @@
     "author": "daveycodez",
     "license": "MIT",
     "devDependencies": {
-        "@electric-sql/client": "^1.1.2",
-        "@tanstack/db": "^0.4.17",
-        "@tanstack/rxdb-db-collection": "^0.1.28",
-        "@tanstack/store": "^0.8.0",
-        "@types/lodash-es": "^4.17.12",
+        "@tanstack/react-store": "^0.8.0",
         "@types/node": "^24.10.0",
         "@types/react": "^19.2.2",
         "drizzle-orm": "^0.44.7",
         "lodash-es": "^4.17.21",
-        "rxdb": "^16.20.0",
-        "rxjs": "^7.8.2",
         "typescript": "^5.9.3",
         "vite": "^7.1.12",
         "vite-plugin-dts": "^4.5.4"
     },
     "peerDependencies": {
-        "@electric-sql/client": ">=1.1.0",
         "@pglofi/core": "workspace:*",
-        "@tanstack/db": ">=0.4.16",
         "@tanstack/react-store": ">=0.8.0",
-        "@tanstack/rxdb-db-collection": ">=0.1.27",
-        "@tanstack/store": ">=0.8.0",
-        "lodash-es": ">=4.17.0",
-        "react": ">=18.0.0",
-        "rxdb": ">=16.20.0",
-        "rxjs": ">=7.8.0"
+        "react": ">=18.0.0"
     }
 }
