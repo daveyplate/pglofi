@@ -438,9 +438,6 @@ importers:
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@neondatabase/serverless@1.0.2)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.1)(kysely@0.28.8)(pg@8.16.3)(prisma@5.22.0)
-      lodash-es:
-        specifier: ^4.17.21
-        version: 4.17.21
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
