@@ -9,6 +9,7 @@ import type { InferQueryResult, QueryConfig } from "./query-types"
 export type QueryResult<TData = unknown[]> = {
     isPending: boolean
     data: TData
+    remoteData: TData | null
     error?: Error
     refetch?: () => void
 }
@@ -69,9 +70,10 @@ export function createQuery<
         queryCollection.cleanup()
     }
 
-    const store = new Store({
+    const store = new Store<QueryResult<TQueryResult>>({
         isPending: !data?.length,
-        data
+        data,
+        remoteData: null
     })
 
     queryStores.set(queryKey, store)
