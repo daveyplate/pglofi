@@ -1,0 +1,36 @@
+{
+    "name": "@pglofi/postgrest",
+    "version": "0.0.0",
+    "description": "",
+    "type": "module",
+    "scripts": {
+        "dev": "tsc --watch",
+        "build": "vite build"
+    },
+    "files": [
+        "src",
+        "dist"
+    ],
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "source": "./src/index.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "keywords": [],
+    "author": "daveycodez",
+    "license": "MIT",
+    "devDependencies": {
+        "@types/node": "^24.10.0",
+        "drizzle-orm": "^0.44.7",
+        "typescript": "^5.9.3",
+        "vite": "^7.1.12",
+        "vite-plugin-dts": "^4.5.4"
+    },
+    "peerDependencies": {
+        "@pglofi/core": "workspace:*"
+    }
+}
