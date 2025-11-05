@@ -8,7 +8,12 @@ export const Route = createFileRoute("/todos")({
 
 function TodosPage() {
     const { data: todos, isPending } = lofi.useQuery("todos", {
-        include: { user: "profiles" }
+        include: { user: { table: "profiles", on: "userId" } },
+        orderBy: { id: "desc" }
+    })
+
+    const { data: users } = lofi.useQuery("profiles", {
+        include: { todos: "todos" }
     })
 
     if (isPending) return <div>Loading...</div>

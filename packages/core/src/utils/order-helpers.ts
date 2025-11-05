@@ -1,5 +1,5 @@
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import type { SortConfig } from "../query/query-types"
+import type { OrderByConfig } from "../query/query-types"
 import { tsToSqlColumn } from "./column-mapping"
 
 /**
@@ -33,8 +33,8 @@ function getStringSortStrategy(
 }
 
 /**
- * Normalizes sort configuration to a consistent array format (Mango Query style).
- * Handles array of strings or array of objects.
+ * Normalizes order by configuration to a consistent array format (SQL style).
+ * Handles single object, array of strings, or array of objects.
  *
  * This is a shared utility used by both usePostgrestQuery and useLocalQuery.
  *
@@ -43,7 +43,7 @@ function getStringSortStrategy(
  *                       for pagination when sorting by non-unique fields.
  */
 export function normalizeSortConfig<TTable extends AnyPgTable>(
-    sortConfig: SortConfig<TTable>,
+    orderByConfig: OrderByConfig<TTable>,
     table?: AnyPgTable,
     ensureIdSort = false
 ): Array<{
@@ -51,8 +51,44 @@ export function normalizeSortConfig<TTable extends AnyPgTable>(
     ascending: boolean
     stringSort?: "lexical" | "locale"
 }> {
-    // SortConfig is always an array in Mango Query format
-    const normalized = sortConfig.flatMap((sortItem) => {
+    // Handle single object format: { createdAt: "desc" }
+    if (!Array.isArray(orderByConfig)) {
+        const normalized: Array<{
+            column: string
+            ascending: boolean
+            stringSort?: "lexical" | "locale"
+        }> = []
+        
+        for (const [column, direction] of Object.entries(orderByConfig)) {
+            const sqlColumn = table ? tsToSqlColumn(table, column) : column
+            const stringSort = table
+                ? getStringSortStrategy(table, column)
+                : undefined
+
+            normalized.push({
+                column: sqlColumn,
+                ascending: direction === "asc" || direction === undefined,
+                stringSort
+            })
+        }
+
+        // Ensure 'id' is included as a secondary sort key for stable ordering
+        if (ensureIdSort) {
+            const hasIdSort = normalized.some((order) => order.column === "id")
+            if (!hasIdSort) {
+                normalized.push({
+                    column: "id",
+                    ascending: true,
+                    stringSort: undefined
+                })
+            }
+        }
+
+        return normalized
+    }
+
+    // Handle array format: ["createdAt", "name"] or [{ createdAt: "desc" }, { name: "asc" }]
+    const normalized = orderByConfig.flatMap((sortItem) => {
         if (typeof sortItem === "string") {
             // String format: ["createdAt", "name"] - defaults to ascending
             const sqlColumn = table ? tsToSqlColumn(table, sortItem) : sortItem
@@ -94,15 +130,15 @@ export function normalizeSortConfig<TTable extends AnyPgTable>(
 }
 
 /**
- * Applies sort configuration to an array of records (for post-processing one-to-many relations).
+ * Applies order by configuration to an array of records (for post-processing one-to-many relations).
  * Used by flatToHierarchical to sort relation arrays after grouping.
  */
 export function applySortToArray<T extends Record<string, unknown>>(
     records: T[],
-    sortConfig: SortConfig<AnyPgTable>,
+    orderByConfig: OrderByConfig<AnyPgTable>,
     table?: AnyPgTable
 ): T[] {
-    const orders = normalizeSortConfig(sortConfig, table, true)
+    const orders = normalizeSortConfig(orderByConfig, table, true)
     const sorted = [...records]
 
     sorted.sort((a, b) => {

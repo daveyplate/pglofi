@@ -1,16 +1,18 @@
 import type { InferSelectModel } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import type { SelectorConfig } from "./selector-types"
+import type { WhereConfig } from "./selector-types"
 
 // Helper type to get column names from a table
 type ColumnNames<TTable extends AnyPgTable> = keyof TTable["_"]["columns"] &
     string
 
-// Sort configuration (Mango Query format)
+// Order by configuration (SQL style)
 // Can be:
+// - Single object: { createdAt: "desc" }
 // - Array of column names (defaults to "asc"): ["createdAt", "name"]
 // - Array of objects with column and direction: [{ createdAt: "desc" }, { name: "asc" }]
-export type SortConfig<TTable extends AnyPgTable> =
+export type OrderByConfig<TTable extends AnyPgTable> =
+    | Partial<Record<ColumnNames<TTable>, "asc" | "desc">>
     | ColumnNames<TTable>[]
     | Partial<Record<ColumnNames<TTable>, "asc" | "desc">>[]
 
@@ -20,16 +22,22 @@ type RelationConfig<
     TTableKey extends keyof TSchema,
     TRelatedTableName extends keyof TSchema & string
 > = {
-    from: TRelatedTableName // The table/collection to join with
-    many?: boolean // Whether this is a one-to-many relationship
-    localField?: ColumnNames<TSchema[TTableKey]> // Field from the current table
-    foreignField?: ColumnNames<TSchema[TRelatedTableName]> // Field from the related table
+    table: TRelatedTableName // The table/collection to join with
     include?: IncludeConfig<TSchema, TRelatedTableName>
-    selector?: SelectorConfig<TSchema[TRelatedTableName]>
+    where?: WhereConfig<TSchema[TRelatedTableName]>
     limit?: number
-    skip?: number
-    sort?: SortConfig<TSchema[TRelatedTableName]>
-}
+    offset?: number
+    orderBy?: OrderByConfig<TSchema[TRelatedTableName]>
+} & (
+    | {
+          many?: false | undefined
+          on?: ColumnNames<TSchema[TTableKey]> | ColumnNames<TSchema[TRelatedTableName]> | Partial<Record<ColumnNames<TSchema[TTableKey]>, ColumnNames<TSchema[TRelatedTableName]>>>
+      }
+    | {
+          many: true
+          on?: ColumnNames<TSchema[TRelatedTableName]> | Partial<Record<ColumnNames<TSchema[TTableKey]>, ColumnNames<TSchema[TRelatedTableName]>>>
+      }
+)
 
 // Helper type to create a discriminated union of all possible RelationConfig types
 export type AnyRelationConfig<
@@ -55,10 +63,10 @@ export type QueryConfig<
     TTableKey extends keyof TSchema = keyof TSchema
 > = {
     include?: IncludeConfig<TSchema, TTableKey>
-    selector?: SelectorConfig<TSchema[TTableKey]>
+    where?: WhereConfig<TSchema[TTableKey]>
     limit?: number
-    skip?: number
-    sort?: SortConfig<TSchema[TTableKey]>
+    offset?: number
+    orderBy?: OrderByConfig<TSchema[TTableKey]>
 }
 
 // Helper type to infer the result type based on the query configuration
@@ -139,7 +147,18 @@ type InferIncludeType<
               : never
           : TInclude extends { table: infer TRelatedTable }
             ? TRelatedTable extends keyof TSchema & string
-                ? InferSelectModel<TSchema[TRelatedTable]> | null
+                ? // Try to auto-detect relationship type when many is not specified
+                  HasForeignKeyTo<
+                      TSchema[TTableKey],
+                      GetTableName<TSchema[TRelatedTable]>
+                  > extends true
+                    ? InferSelectModel<TSchema[TRelatedTable]> | null // Many-to-one
+                    : HasForeignKeyTo<
+                            TSchema[TRelatedTable],
+                            GetTableName<TSchema[TTableKey]>
+                        > extends true
+                      ? InferSelectModel<TSchema[TRelatedTable]>[] // One-to-many
+                      : InferSelectModel<TSchema[TRelatedTable]> | null // Fallback
                 : never
             : never
 

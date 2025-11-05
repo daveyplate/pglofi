@@ -4,108 +4,96 @@ import type { AnyPgTable } from "drizzle-orm/pg-core"
 type ColumnNames<TTable extends AnyPgTable> = keyof TTable["_"]["columns"] &
     string
 
-// All supported comparison operators (Mango Query style with $ prefix)
+// All supported comparison operators (SQL style)
 export type ComparisonOperator =
-    | "$eq" // Equal
-    | "$ne" // Not equal
-    | "$gt" // Greater than
-    | "$gte" // Greater than or equal
-    | "$lt" // Less than
-    | "$lte" // Less than or equal
-    | "$like" // Pattern matching (case-sensitive) - PostgreSQL extension
-    | "$ilike" // Pattern matching (case-insensitive) - PostgreSQL extension
-    | "$in" // In array
-    | "$nin" // Not in array
-    | "$exists" // Check if field exists
-    | "$type" // Check field type (for future use)
-    | "$mod" // Modulo operation
-    | "$regex" // Regular expression (for future use)
+    | "eq" // Equal
+    | "neq" // Not equal
+    | "gt" // Greater than
+    | "gte" // Greater than or equal
+    | "lt" // Less than
+    | "lte" // Less than or equal
+    | "like" // Pattern matching (case-sensitive) - PostgreSQL extension
+    | "ilike" // Pattern matching (case-insensitive) - PostgreSQL extension
+    | "in" // In array
 
-// Comparison condition types (Mango Query format)
+// Comparison condition types (SQL style)
 export type ComparisonCondition<TValue> =
-    | { $eq: TValue }
-    | { $ne: TValue }
-    | { $gt: TValue }
-    | { $gte: TValue }
-    | { $lt: TValue }
-    | { $lte: TValue }
-    | { $like: string } // Only for string columns
-    | { $ilike: string } // Only for string columns
-    | { $in: TValue[] }
-    | { $nin: TValue[] }
-    | { $exists: boolean }
-    | { $type: string }
-    | { $mod: [number, number] } // [Divisor, Remainder]
-    | { $regex: string }
+    | { eq: TValue }
+    | { neq: TValue }
+    | { gt: TValue }
+    | { gte: TValue }
+    | { lt: TValue }
+    | { lte: TValue }
+    | { like: string } // Only for string columns
+    | { ilike: string } // Only for string columns
+    | { in: TValue[] }
 
-// Logical operators (Mango Query format with $ prefix)
-export type LogicalOperator = "$and" | "$or" | "$not" | "$nor"
+// Logical operators (SQL style)
+export type LogicalOperator = "and" | "or" | "not" | "nor"
 
-// Base selector config (column conditions)
-type BaseSelectorConfig<TTable extends AnyPgTable> = {
+// Base where config (column conditions)
+type BaseWhereConfig<TTable extends AnyPgTable> = {
     [K in ColumnNames<TTable>]?:
         | TTable["_"]["columns"][K]["_"]["data"]
         | ComparisonCondition<TTable["_"]["columns"][K]["_"]["data"]>
 }
 
-// Selector clause with optional logical operators (Mango Query format)
-export type SelectorConfig<TTable extends AnyPgTable> =
-    | BaseSelectorConfig<TTable>
+// Where clause with optional logical operators (SQL style)
+export type WhereConfig<TTable extends AnyPgTable> =
+    | BaseWhereConfig<TTable>
     | {
-          $and?: SelectorConfig<TTable>[]
+          and?: WhereConfig<TTable>[]
       }
     | {
-          $or?: SelectorConfig<TTable>[]
+          or?: WhereConfig<TTable>[]
       }
     | {
-          $not?: SelectorConfig<TTable>
+          not?: WhereConfig<TTable>
       }
     | {
-          $nor?: SelectorConfig<TTable>[]
+          nor?: WhereConfig<TTable>[]
       }
 
-// Helper to check if a selector is a logical operator
+// Legacy type alias for backwards compatibility during migration
+export type SelectorConfig<TTable extends AnyPgTable> = WhereConfig<TTable>
+
+// Helper to check if a where config is a logical operator
 export function isLogicalOperator(
-    selector: unknown
-): selector is
-    | { $and: SelectorConfig<AnyPgTable>[] }
-    | { $or: SelectorConfig<AnyPgTable>[] }
-    | { $not: SelectorConfig<AnyPgTable> }
-    | { $nor: SelectorConfig<AnyPgTable>[] } {
+    whereConfig: unknown
+): whereConfig is
+    | { and: WhereConfig<AnyPgTable>[] }
+    | { or: WhereConfig<AnyPgTable>[] }
+    | { not: WhereConfig<AnyPgTable> }
+    | { nor: WhereConfig<AnyPgTable>[] } {
     return (
-        typeof selector === "object" &&
-        selector !== null &&
-        ("$and" in selector ||
-            "$or" in selector ||
-            "$not" in selector ||
-            "$nor" in selector)
+        typeof whereConfig === "object" &&
+        whereConfig !== null &&
+        ("and" in whereConfig ||
+            "or" in whereConfig ||
+            "not" in whereConfig ||
+            "nor" in whereConfig)
     )
 }
 
-// Helper to normalize selector conditions (convert shorthand to explicit format)
+// Helper to normalize where conditions (convert shorthand to explicit format)
 export function normalizeSelectorCondition<TValue>(
     condition: TValue | ComparisonCondition<TValue>
 ): ComparisonCondition<TValue> {
     // If it's already an object with an operator, return as-is
     if (typeof condition === "object" && condition !== null) {
-        if ("$eq" in condition) return condition as { $eq: TValue }
-        if ("$ne" in condition) return condition as { $ne: TValue }
-        if ("$gt" in condition) return condition as { $gt: TValue }
-        if ("$gte" in condition) return condition as { $gte: TValue }
-        if ("$lt" in condition) return condition as { $lt: TValue }
-        if ("$lte" in condition) return condition as { $lte: TValue }
-        if ("$like" in condition) return condition as { $like: string }
-        if ("$ilike" in condition) return condition as { $ilike: string }
-        if ("$in" in condition) return condition as { $in: TValue[] }
-        if ("$nin" in condition) return condition as { $nin: TValue[] }
-        if ("$exists" in condition) return condition as { $exists: boolean }
-        if ("$type" in condition) return condition as { $type: string }
-        if ("$mod" in condition) return condition as { $mod: [number, number] }
-        if ("$regex" in condition) return condition as { $regex: string }
+        if ("eq" in condition) return condition as { eq: TValue }
+        if ("neq" in condition) return condition as { neq: TValue }
+        if ("gt" in condition) return condition as { gt: TValue }
+        if ("gte" in condition) return condition as { gte: TValue }
+        if ("lt" in condition) return condition as { lt: TValue }
+        if ("lte" in condition) return condition as { lte: TValue }
+        if ("like" in condition) return condition as { like: string }
+        if ("ilike" in condition) return condition as { ilike: string }
+        if ("in" in condition) return condition as { in: TValue[] }
     }
 
-    // Default: treat as equality (implicit $eq)
-    return { $eq: condition as TValue }
+    // Default: treat as equality (implicit eq)
+    return { eq: condition as TValue }
 }
 
 // Helper to get the operator and value from a normalized condition
@@ -115,29 +103,17 @@ export function getOperatorAndValue<TValue>(
     operator: ComparisonOperator
     value: TValue | TValue[] | string | boolean | number | [number, number]
 } {
-    if ("$eq" in normalized) return { operator: "$eq", value: normalized.$eq }
-    if ("$ne" in normalized) return { operator: "$ne", value: normalized.$ne }
-    if ("$gt" in normalized) return { operator: "$gt", value: normalized.$gt }
-    if ("$gte" in normalized)
-        return { operator: "$gte", value: normalized.$gte }
-    if ("$lt" in normalized) return { operator: "$lt", value: normalized.$lt }
-    if ("$lte" in normalized)
-        return { operator: "$lte", value: normalized.$lte }
-    if ("$like" in normalized)
-        return { operator: "$like", value: normalized.$like }
-    if ("$ilike" in normalized)
-        return { operator: "$ilike", value: normalized.$ilike }
-    if ("$in" in normalized) return { operator: "$in", value: normalized.$in }
-    if ("$nin" in normalized)
-        return { operator: "$nin", value: normalized.$nin }
-    if ("$exists" in normalized)
-        return { operator: "$exists", value: normalized.$exists }
-    if ("$type" in normalized)
-        return { operator: "$type", value: normalized.$type }
-    if ("$mod" in normalized)
-        return { operator: "$mod", value: normalized.$mod }
-    if ("$regex" in normalized)
-        return { operator: "$regex", value: normalized.$regex }
+    if ("eq" in normalized) return { operator: "eq", value: normalized.eq }
+    if ("neq" in normalized) return { operator: "neq", value: normalized.neq }
+    if ("gt" in normalized) return { operator: "gt", value: normalized.gt }
+    if ("gte" in normalized) return { operator: "gte", value: normalized.gte }
+    if ("lt" in normalized) return { operator: "lt", value: normalized.lt }
+    if ("lte" in normalized) return { operator: "lte", value: normalized.lte }
+    if ("like" in normalized)
+        return { operator: "like", value: normalized.like }
+    if ("ilike" in normalized)
+        return { operator: "ilike", value: normalized.ilike }
+    if ("in" in normalized) return { operator: "in", value: normalized.in }
 
     // Fallback
     throw new Error("Invalid comparison condition")

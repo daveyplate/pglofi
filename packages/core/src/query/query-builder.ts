@@ -20,12 +20,12 @@ import type { AnyPgTable } from "drizzle-orm/pg-core"
 import { type FKInfo, getFKInfo } from "../utils/fk-helpers"
 import { applySortToArray, normalizeSortConfig } from "../utils/order-helpers"
 import type { SchemaCollections } from "../utils/schema-filter"
-import type { QueryConfig, SortConfig } from "./query-types"
+import type { OrderByConfig, QueryConfig } from "./query-types"
 import {
     getOperatorAndValue,
     isLogicalOperator,
     normalizeSelectorCondition,
-    type SelectorConfig
+    type WhereConfig
 } from "./selector-types"
 
 // Type for table records with dynamic structure
@@ -43,59 +43,51 @@ function applyComparisonOperator(
     value: unknown
 ): ConditionExpression {
     switch (operator) {
-        case "$eq":
+        case "eq":
             return eq(columnRef as never, value)
-        case "$ne":
+        case "neq":
             return not(eq(columnRef as never, value))
-        case "$gt":
+        case "gt":
             return gt(columnRef as never, value)
-        case "$gte":
+        case "gte":
             return gte(columnRef as never, value)
-        case "$lt":
+        case "lt":
             return lt(columnRef as never, value)
-        case "$lte":
+        case "lte":
             return lte(columnRef as never, value)
-        case "$like":
+        case "like":
             return like(columnRef as never, value as string)
-        case "$ilike":
+        case "ilike":
             return ilike(columnRef as never, value as string)
-        case "$in":
+        case "in":
             return inArray(columnRef as never, value as unknown[])
-        case "$nin":
-            // $nin is not in array
-            return not(inArray(columnRef as never, value as unknown[]))
-        case "$exists":
-            // $exists checks if field is null or not
-            return value === true
-                ? not(eq(columnRef as never, null))
-                : eq(columnRef as never, null)
         default:
             return eq(columnRef as never, value)
     }
 }
 
 /**
- * Recursively builds selector expressions for TanStack DB.
- * Handles $and/$or/$not/$nor logical operators and basic column conditions.
+ * Recursively builds where expressions for TanStack DB.
+ * Handles and/or/not/nor logical operators and basic column conditions.
  * All conditions at the same level are combined with implicit AND.
  */
 function buildSelectorExpression(
     parentAlias: string,
-    selectorConfig: SelectorConfig<AnyPgTable>
+    whereConfig: WhereConfig<AnyPgTable>
 ): (tables: Record<string, TableRecord>) => ConditionExpression {
     // Collect all condition functions (logical operators + basic columns)
     const allConditions: Array<
         (tables: Record<string, TableRecord>) => ConditionExpression
     > = []
 
-    // Handle $and logical operator
+    // Handle and logical operator
     if (
-        isLogicalOperator(selectorConfig) &&
-        "$and" in selectorConfig &&
-        selectorConfig.$and
+        isLogicalOperator(whereConfig) &&
+        "and" in whereConfig &&
+        whereConfig.and
     ) {
-        const conditions = selectorConfig.$and.map((subSelector) =>
-            buildSelectorExpression(parentAlias, subSelector)
+        const conditions = whereConfig.and.map((subWhere) =>
+            buildSelectorExpression(parentAlias, subWhere)
         )
         allConditions.push((tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
@@ -105,14 +97,14 @@ function buildSelectorExpression(
         })
     }
 
-    // Handle $or logical operator
+    // Handle or logical operator
     if (
-        isLogicalOperator(selectorConfig) &&
-        "$or" in selectorConfig &&
-        selectorConfig.$or
+        isLogicalOperator(whereConfig) &&
+        "or" in whereConfig &&
+        whereConfig.or
     ) {
-        const conditions = selectorConfig.$or.map((subSelector) =>
-            buildSelectorExpression(parentAlias, subSelector)
+        const conditions = whereConfig.or.map((subWhere) =>
+            buildSelectorExpression(parentAlias, subWhere)
         )
         allConditions.push((tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
@@ -122,15 +114,15 @@ function buildSelectorExpression(
         })
     }
 
-    // Handle $not logical operator
+    // Handle not logical operator
     if (
-        isLogicalOperator(selectorConfig) &&
-        "$not" in selectorConfig &&
-        selectorConfig.$not
+        isLogicalOperator(whereConfig) &&
+        "not" in whereConfig &&
+        whereConfig.not
     ) {
         const innerCondition = buildSelectorExpression(
             parentAlias,
-            selectorConfig.$not
+            whereConfig.not
         )
         allConditions.push((tables: Record<string, TableRecord>) => {
             const result = innerCondition(tables)
@@ -138,14 +130,14 @@ function buildSelectorExpression(
         })
     }
 
-    // Handle $nor logical operator (NOT OR)
+    // Handle nor logical operator (NOT OR)
     if (
-        isLogicalOperator(selectorConfig) &&
-        "$nor" in selectorConfig &&
-        selectorConfig.$nor
+        isLogicalOperator(whereConfig) &&
+        "nor" in whereConfig &&
+        whereConfig.nor
     ) {
-        const conditions = selectorConfig.$nor.map((subSelector) =>
-            buildSelectorExpression(parentAlias, subSelector)
+        const conditions = whereConfig.nor.map((subWhere) =>
+            buildSelectorExpression(parentAlias, subWhere)
         )
         allConditions.push((tables: Record<string, TableRecord>) => {
             const results = conditions.map((condFn) => condFn(tables))
@@ -158,12 +150,12 @@ function buildSelectorExpression(
 
     // Handle basic column conditions
     // These are combined with implicit AND with any logical operators above
-    for (const [column, condition] of Object.entries(selectorConfig)) {
+    for (const [column, condition] of Object.entries(whereConfig)) {
         if (
-            column === "$and" ||
-            column === "$or" ||
-            column === "$not" ||
-            column === "$nor"
+            column === "and" ||
+            column === "or" ||
+            column === "not" ||
+            column === "nor"
         )
             continue
 
@@ -204,18 +196,20 @@ export function buildJoinCondition(
         const parent = tables[parentAlias]
         const related = tables[relatedAlias]
 
-        // For one-to-many: parent.foreignColumn === related.localColumn
-        // For many-to-one: parent.localColumn === related.foreignColumn
+        // For one-to-many: FK is on related table, so parent.localColumn === related.foreignColumn
+        // Example: profiles.id === todos.userId (FK is on todos)
+        // For many-to-one: FK is on parent table, so parent.localColumn === related.foreignColumn
+        // Example: todos.userId === profiles.id (FK is on todos)
         if (fkInfo.isOneToMany) {
-            return eq(parent[fkInfo.foreignColumn], related[fkInfo.localColumn])
+            return eq(parent[fkInfo.localColumn], related[fkInfo.foreignColumn])
         }
         return eq(parent[fkInfo.localColumn], related[fkInfo.foreignColumn])
     }
 }
 
 /**
- * Applies sort, limit, and skip to a TanStack DB query.
- * Defaults to sorting by 'id asc' if no explicit sort is provided.
+ * Applies order by, limit, and offset to a TanStack DB query.
+ * Defaults to ordering by 'id asc' if no explicit orderBy is provided.
  */
 export function applySortLimitSkip<
     TSchema extends Record<string, AnyPgTable>,
@@ -228,12 +222,12 @@ export function applySortLimitSkip<
 ): unknown {
     let currentQuery = q
 
-    const hasExplicitSort = query?.sort !== undefined
+    const hasExplicitOrderBy = query?.orderBy !== undefined
 
-    // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
+    // Always apply order by, defaulting to 'id asc' if no explicit orderBy is provided
     // Always ensure 'id' is included as a secondary sort key for stable ordering
-    const orders = hasExplicitSort
-        ? normalizeSortConfig(query.sort!, parentTable, true)
+    const orders = hasExplicitOrderBy
+        ? normalizeSortConfig(query.orderBy!, parentTable, true)
         : [{ column: "id", ascending: true }]
 
     for (const { column, ascending, stringSort } of orders) {
@@ -274,21 +268,21 @@ export function applySortLimitSkip<
         ).limit(query.limit)
     }
 
-    // Apply skip
-    if (query?.skip !== undefined) {
+    // Apply offset
+    if (query?.offset !== undefined) {
         currentQuery = (
             currentQuery as { offset: (count: number) => unknown }
-        ).offset(query.skip)
+        ).offset(query.offset)
     }
 
     return currentQuery
 }
 
 /**
- * Builds a complete TanStack DB query with selector conditions, joins, and ordering.
+ * Builds a complete TanStack DB query with where conditions, joins, and ordering.
  * Recursively handles nested includes and applies all filters in one pass.
  *
- * Note: sort/limit/skip for joins are applied post-processing in flatToHierarchical
+ * Note: orderBy/limit/offset for joins are applied post-processing in flatToHierarchical
  * because TanStack DB doesn't support them at query time for relations.
  */
 export function buildQuery<
@@ -329,19 +323,16 @@ export function buildQuery<
         }) as QueryBuilder<Context>
     }
 
-    // Apply selector conditions (for both root and joins)
-    if (query?.selector) {
-        const selectorExpression = buildSelectorExpression(
-            alias,
-            query.selector
-        )
+    // Apply where conditions (for both root and joins)
+    if (query?.where) {
+        const whereExpression = buildSelectorExpression(alias, query.where)
         currentQuery = currentQuery.where(
             // biome-ignore lint/suspicious/noExplicitAny: TanStack DB callback types are complex
-            selectorExpression as any
+            whereExpression as any
         ) as QueryBuilder<Context>
     }
 
-    // Apply sort/limit/skip (only for root - joins handle this in post-processing)
+    // Apply orderBy/limit/offset (only for root - joins handle this in post-processing)
     if (isRoot) {
         const parentTable = schema[tableKey]
         currentQuery = applySortLimitSkip(
@@ -359,15 +350,15 @@ export function buildQuery<
         )) {
             const config =
                 typeof relationConfig === "string"
-                    ? { from: relationConfig }
+                    ? { table: relationConfig }
                     : relationConfig
 
             const relatedCollection =
-                collections[config.from as unknown as keyof typeof collections]
+                collections[config.table as unknown as keyof typeof collections]
 
             if (!relatedCollection) {
                 throw new Error(
-                    `Collection not found for table key: ${String(config.from)}`
+                    `Collection not found for table key: ${String(config.table)}`
                 )
             }
 
@@ -392,12 +383,12 @@ export function buildQuery<
                 "left"
             ) as QueryBuilder<Context>
 
-            // Recursively handle this relation's selector conditions and nested includes
+            // Recursively handle this relation's where conditions and nested includes
             // Pass currentQuery to continue building on the existing query
             currentQuery = buildQuery(
                 schema,
                 collections,
-                config.from as keyof TSchema,
+                config.table as keyof TSchema,
                 config as QueryConfig<TSchema, keyof TSchema>,
                 relatedAlias,
                 false,
@@ -449,7 +440,7 @@ export function flatToHierarchical<
             )) {
                 const config =
                     typeof relationConfig === "string"
-                        ? { from: relationConfig }
+                        ? { table: relationConfig }
                         : relationConfig
                 const fkInfo = getFKInfo(schema, parentTableKey, config)
 
@@ -463,28 +454,26 @@ export function flatToHierarchical<
             query.include
         )) {
             const config: {
-                from: string
+                table: string
                 include?: unknown
-                selector?: unknown
+                where?: unknown
                 many?: boolean
                 limit?: number
-                skip?: number
-                sort?: SortConfig<AnyPgTable>
-                localField?: string
-                foreignField?: string
+                offset?: number
+                orderBy?: OrderByConfig<AnyPgTable>
+                on?: string | Record<string, string>
             } =
                 typeof relationConfig === "string"
-                    ? { from: relationConfig }
+                    ? { table: relationConfig }
                     : (relationConfig as {
-                          from: string
+                          table: string
                           include?: unknown
-                          selector?: unknown
+                          where?: unknown
                           many?: boolean
                           limit?: number
-                          skip?: number
-                          sort?: SortConfig<AnyPgTable>
-                          localField?: string
-                          foreignField?: string
+                          offset?: number
+                          orderBy?: OrderByConfig<AnyPgTable>
+                          on?: string | Record<string, string>
                       })
 
             const relatedAlias: string = `${parentAlias}_${relationName}`
@@ -515,7 +504,7 @@ export function flatToHierarchical<
                 const nestedResults = flatToHierarchical(
                     schema,
                     [syntheticRow],
-                    config.from as keyof TSchema,
+                    config.table as keyof TSchema,
                     relatedAlias,
                     config as QueryConfig<TSchema, keyof TSchema>
                 )
@@ -539,14 +528,14 @@ export function flatToHierarchical<
         }
     }
 
-    // Apply sort, limit, and skip to one-to-many relations after grouping
+    // Apply order by, limit, and offset to one-to-many relations after grouping
     for (const parentEntry of parentMap.values()) {
         for (const [relationName, relationConfig] of Object.entries(
             query.include
         )) {
             const config =
                 typeof relationConfig === "string"
-                    ? { from: relationConfig }
+                    ? { table: relationConfig }
                     : relationConfig
 
             const fkInfo = getFKInfo(schema, parentTableKey, config)
@@ -557,21 +546,20 @@ export function flatToHierarchical<
             ) {
                 let relationArray = parentEntry[relationName] as TableRecord[]
 
-                const hasExplicitSort = config.sort !== undefined
+                const hasExplicitOrderBy = config.orderBy !== undefined
 
-                // Always apply sort, defaulting to 'id asc' if no explicit sort is provided
-                const sortToApply: SortConfig<AnyPgTable> = hasExplicitSort
-                    ? config.sort!
-                    : ["id"]
-                const relatedTable = schema[config.from as keyof TSchema]
+                // Always apply order by, defaulting to 'id asc' if no explicit orderBy is provided
+                const orderByToApply: OrderByConfig<AnyPgTable> =
+                    hasExplicitOrderBy ? config.orderBy! : ["id"]
+                const relatedTable = schema[config.table as keyof TSchema]
                 relationArray = applySortToArray(
                     relationArray,
-                    sortToApply,
+                    orderByToApply,
                     relatedTable
                 )
 
-                // Apply skip and limit
-                const startIndex = config.skip || 0
+                // Apply offset and limit
+                const startIndex = config.offset || 0
                 const endIndex =
                     config.limit !== undefined
                         ? startIndex + config.limit
