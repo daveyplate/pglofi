@@ -3,14 +3,8 @@ import type { Collection } from "@tanstack/db"
 import { Store } from "@tanstack/store"
 import { getTableName, type InferSelectModel } from "drizzle-orm"
 import { isEqual } from "lodash-es"
-import {
-    addRxPlugin,
-    type RxReplicationPullStreamItem
-} from "rxdb/plugins/core"
+import { addRxPlugin } from "rxdb/plugins/core"
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
-import { replicateRxCollection } from "rxdb/plugins/replication"
-import { Subject } from "rxjs"
-
 import {
     collectionsStore,
     createCollections
@@ -20,6 +14,13 @@ import {
     dbStore,
     destroyDatabase
 } from "./database/create-database"
+import {
+    createReplications,
+    type PullStreams,
+    pullStreamsStore,
+    type ReplicationStates,
+    replicationStatesStore
+} from "./database/create-replications"
 import {
     configStore,
     type LofiConfig,
@@ -37,11 +38,6 @@ import {
 
 const tokenStore = new Store<string | undefined>(undefined)
 const syncStartedStore = new Store(false)
-
-type PullStreams<TSchema extends Record<string, unknown>> = Record<
-    TableKey<TSchema>,
-    Subject<RxReplicationPullStreamItem<unknown, unknown>>
->
 
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     setToken: (token: string) => void
@@ -63,7 +59,8 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
         query?: TQueryConfig
     ) => () => void
     collections: SchemaCollections<TSchema>
-    // pullStreams: PullStreams<TSchema>
+    pullStreams: PullStreams<TSchema>
+    replicationStates: ReplicationStates<TSchema>
     syncStarted: boolean
 }
 
@@ -110,9 +107,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
             await createCollections(resolvedConfig, db)
         }
 
-        // Create pull streams for each table
-
-        const pullStreams = {} as PullStreams<TSchema>
+        // Create replications for each table
+        await createReplications(resolvedConfig, db)
 
         if (!isServer) {
             const schemaTableKeys = Object.keys(
@@ -123,36 +119,16 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
                 const schemaTable = sanitizedSchema[tableKey]
                 const tableName = getTableName(schemaTable)
 
-                if (!(tableName in db.collections)) continue
-
-                const pullStream$ = new Subject<
-                    RxReplicationPullStreamItem<unknown, unknown>
-                >()
-                pullStreams[tableKey] = pullStream$
-
-                // Set up replication for each table
-                replicateRxCollection({
-                    replicationIdentifier: tableName,
-                    collection: db[tableName],
-                    autoStart: resolvedConfig.autoStart ?? true,
-                    pull: {
-                        handler: async () => {
-                            return { checkpoint: {}, documents: [] }
-                        },
-                        stream$: pullStream$.asObservable()
-                    },
-                    push: {
-                        handler: async () => {
-                            return []
-                        }
-                    }
-                })
-
-                // Set up ShapeStream for each table
                 if (
                     resolvedConfig.shapeURL &&
                     (tableName === "todos" || tableName === "profiles")
                 ) {
+                    const pullStreams =
+                        pullStreamsStore.state as PullStreams<TSchema>
+                    const pullStream$ = pullStreams[tableKey]
+
+                    if (!pullStream$) continue
+
                     const stream = new ShapeStream({
                         url: resolvedConfig.shapeURL,
                         params: {
@@ -196,6 +172,9 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     }
 
     const collections = collectionsStore.state as CollectionsReturn
+    const pullStreams = pullStreamsStore.state as PullStreams<TSchema>
+    const replicationStates =
+        replicationStatesStore.state as ReplicationStates<TSchema>
 
     return {
         setToken: (token: string) => {
@@ -209,6 +188,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         subscribeQuery: (tableKey, query) =>
             subscribeQuery(sanitizedSchema, collections, tableKey, query),
         collections,
+        pullStreams,
+        replicationStates,
         syncStarted: syncStartedStore.state
     }
 }

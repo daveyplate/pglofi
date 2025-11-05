@@ -9,6 +9,7 @@ import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 import { collectionsStore } from "./create-collections"
+import { pullStreamsStore, replicationStatesStore } from "./create-replications"
 import { configStore, type LofiConfig } from "./lofi-config"
 
 export const dbStore = new Store<RxDatabase | undefined>(undefined)
@@ -45,5 +46,8 @@ export async function createDatabase<TSchema extends Record<string, unknown>>(
 
 export const destroyDatabase = async () => {
     await removeRxDatabase(configStore.state!.name!, dbStore.state!.storage)
+    dbStore.setState(undefined)
     collectionsStore.setState({})
+    pullStreamsStore.setState({})
+    replicationStatesStore.setState({})
 }
