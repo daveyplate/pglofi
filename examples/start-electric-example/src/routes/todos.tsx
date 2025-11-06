@@ -1,5 +1,16 @@
+import { useAuthenticate } from "@daveyplate/better-auth-ui"
 import { createFileRoute } from "@tanstack/react-router"
+import { useThrottle } from "@uidotdev/usehooks"
+import { PlusIcon } from "lucide-react"
+import { useState } from "react"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import type { Todo } from "@/database/schema"
+import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
+import TodoItem from "./todos/todo-item"
+import TodoSkeleton from "./todos/todo-skeleton"
 
 export const Route = createFileRoute("/todos")({
     ssr: true,
@@ -7,29 +18,61 @@ export const Route = createFileRoute("/todos")({
 })
 
 function TodosPage() {
+    const { user } = useAuthenticate()
     const token = lofi.useToken()
-    const {
-        data,
-        isPending,
-        remoteData: todos
-    } = lofi.useQuery(token && "todos", {
-        include: { user: { table: "profiles", on: "userId" } },
-        orderBy: { id: "desc" }
+    const [q, setQ] = useState("")
+    const throttledQ = useThrottle(q, 300)
+
+    const { data: todos, isPending } = lofi.useQuery(token && "todos", {
+        include: { user: "profiles" },
+        sort: [{ createdAt: "desc" }]
     })
 
-    const { data: users } = lofi.useQuery(token && "profiles", {
-        include: { todos: "todos" }
-    })
-
-    if (isPending) return <div>Loading...</div>
+    const insertTodo = (todo: Todo) => {
+        lofi.insert("todos", todo)
+    }
 
     return (
-        <div>
-            {todos?.map((todo) => (
-                <div key={todo.id}>
-                    {todo.task} - {todo.user?.name}
-                </div>
-            ))}
-        </div>
+        <main className="container mx-auto flex flex-col gap-4 p-safe-or-4 md:p-safe-or-6">
+            <form action={handleAction(insertTodo)} className="flex gap-3">
+                <Input type="hidden" name="userId" defaultValue={user?.id} />
+
+                <Input
+                    type="text"
+                    name="task"
+                    placeholder="Add a todo"
+                    autoComplete="off"
+                    disabled={!user}
+                    required
+                />
+
+                <Button disabled={!user}>
+                    <PlusIcon />
+                    Add
+                </Button>
+            </form>
+
+            <Input
+                type="text"
+                name="task"
+                placeholder="Search todos"
+                autoComplete="off"
+                disabled={!user}
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+            />
+
+            <div className="flex flex-col gap-4">
+                {isPending ? (
+                    [...Array(3)].map((_, index) => (
+                        <TodoSkeleton key={index} />
+                    ))
+                ) : todos?.length === 0 ? (
+                    <p>No todos</p>
+                ) : (
+                    todos?.map((todo) => <TodoItem key={todo.id} todo={todo} />)
+                )}
+            </div>
+        </main>
     )
 }
