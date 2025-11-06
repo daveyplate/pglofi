@@ -7,12 +7,17 @@ export const Route = createFileRoute("/todos")({
 })
 
 function TodosPage() {
-    const { data: todos, isPending } = lofi.useQuery("todos", {
+    const token = lofi.useToken()
+    const {
+        data,
+        isPending,
+        remoteData: todos
+    } = lofi.useQuery(token && "todos", {
         include: { user: { table: "profiles", on: "userId" } },
         orderBy: { id: "desc" }
     })
 
-    const { data: users } = lofi.useQuery("profiles", {
+    const { data: users } = lofi.useQuery(token && "profiles", {
         include: { todos: "todos" }
     })
 

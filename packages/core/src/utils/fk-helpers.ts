@@ -72,7 +72,11 @@ export function resolveForeignKey(
     relatedTable: AnyPgTable,
     relatedTableName: string,
     options?: {
-        on?: string | Record<string, string> | Partial<Record<string, string>> | unknown
+        on?:
+            | string
+            | Record<string, string>
+            | Partial<Record<string, string>>
+            | unknown
         many?: boolean
     }
 ): FKInfo {
@@ -95,8 +99,8 @@ export function resolveForeignKey(
             // oneToMany.foreignColumn is on current table (profiles.id)
             // But FKInfo expects localColumn on current table, foreignColumn on related table
             return {
-                localColumn: oneToMany.foreignColumn,  // Column on current table (profiles.id)
-                foreignColumn: oneToMany.localColumn,  // Column on related table (todos.userId)
+                localColumn: oneToMany.foreignColumn, // Column on current table (profiles.id)
+                foreignColumn: oneToMany.localColumn, // Column on related table (todos.userId)
                 foreignTable: relatedTableName,
                 isOneToMany: true
             }
@@ -110,15 +114,17 @@ export function resolveForeignKey(
     // Handle on property
     let localField: string | undefined
     let foreignField: string | undefined
-    
+
     // Helper to check if a column exists on a table (has dataType property)
     const hasColumn = (table: AnyPgTable, columnName: string): boolean => {
-        const column = table[columnName as keyof typeof table] as {
-            dataType?: string
-        } | undefined
+        const column = table[columnName as keyof typeof table] as
+            | {
+                  dataType?: string
+              }
+            | undefined
         return column?.dataType !== undefined
     }
-    
+
     // Determine relationship direction: use explicit many if provided, otherwise auto-detect
     let detectedMany: boolean | undefined = options.many
 
@@ -127,10 +133,10 @@ export function resolveForeignKey(
         if (detectedMany === undefined) {
             // Check if the column exists on the related table (one-to-many)
             const relatedHasColumn = hasColumn(relatedTable, options.on)
-            
+
             // Check if the column exists on the current table (many-to-one)
             const currentHasColumn = hasColumn(currentTable, options.on)
-            
+
             if (relatedHasColumn && !currentHasColumn) {
                 // Column is on related table -> one-to-many
                 detectedMany = true
@@ -141,12 +147,23 @@ export function resolveForeignKey(
                 // Column exists on both - try to infer from FK direction
                 // Try one-to-many first: FK on related table
                 const oneToMany = findForeignKey(relatedTable, currentTableName)
-                if (oneToMany && oneToMany.localColumn === tsToSqlColumn(relatedTable, options.on)) {
+                if (
+                    oneToMany &&
+                    oneToMany.localColumn ===
+                        tsToSqlColumn(relatedTable, options.on)
+                ) {
                     detectedMany = true
                 } else {
                     // Try many-to-one: FK on current table
-                    const manyToOne = findForeignKey(currentTable, relatedTableName)
-                    if (manyToOne && manyToOne.localColumn === tsToSqlColumn(currentTable, options.on)) {
+                    const manyToOne = findForeignKey(
+                        currentTable,
+                        relatedTableName
+                    )
+                    if (
+                        manyToOne &&
+                        manyToOne.localColumn ===
+                            tsToSqlColumn(currentTable, options.on)
+                    ) {
                         detectedMany = false
                     } else {
                         // Default to many-to-one if we can't determine
@@ -158,8 +175,8 @@ export function resolveForeignKey(
                 detectedMany = false
             }
         }
-        
-        // String format: 
+
+        // String format:
         // - When many is false (many-to-one): string is localField on current table → maps to "id" on foreign table
         // - When many is true (one-to-many): string is foreignField on foreign table ← maps to "id" on local table
         if (detectedMany) {
@@ -169,24 +186,24 @@ export function resolveForeignKey(
             if (!hasColumn(relatedTable, options.on)) {
                 throw new Error(
                     `Column "${options.on}" specified in 'on' does not exist on table "${relatedTableName}". ` +
-                    `For one-to-many relationships (many: true), the 'on' column must exist on the foreign table.`
+                        `For one-to-many relationships (many: true), the 'on' column must exist on the foreign table.`
                 )
             }
-            
-            foreignField = options.on  // Column on foreign table
-            localField = "id"  // Will be found on current table via FK lookup
+
+            foreignField = options.on // Column on foreign table
+            localField = "id" // Will be found on current table via FK lookup
         } else {
             // Many-to-one: string is localField on current table, maps to "id" on foreign table
             // Validate that the column exists on the current table
             if (!hasColumn(currentTable, options.on)) {
                 throw new Error(
                     `Column "${options.on}" specified in 'on' does not exist on table "${currentTableName}". ` +
-                    `For many-to-one relationships (many: false), the 'on' column must exist on the current table.`
+                        `For many-to-one relationships (many: false), the 'on' column must exist on the current table.`
                 )
             }
-            
-            localField = options.on  // Column on current table
-            foreignField = "id"  // Defaults to "id" on foreign table
+
+            localField = options.on // Column on current table
+            foreignField = "id" // Defaults to "id" on foreign table
         }
     } else if (options.on && typeof options.on === "object") {
         // Object format: { localField: "foreignField" }
@@ -195,31 +212,45 @@ export function resolveForeignKey(
             localField = entries[0][0]
             foreignField = entries[0][1] as string
         }
-        
+
         // Auto-detect many when not explicitly set
         if (detectedMany === undefined) {
             // Check which table has the localField and foreignField
             const localFieldOnCurrent = hasColumn(currentTable, localField!)
             const foreignFieldOnRelated = hasColumn(relatedTable, foreignField!)
-            
+
             // If localField is on current table and foreignField is on related table:
             // - Could be many-to-one (FK on current table: current.localField → related.foreignField)
             // - Could be one-to-many (FK on related table: related.foreignField → current.localField)
             // Try to find FK to determine direction
             if (localFieldOnCurrent && foreignFieldOnRelated) {
                 // Try one-to-many first: FK on related table (most common case)
-                const oneToMany = findForeignKey(relatedTable, currentTableName, {
-                    localColumn: tsToSqlColumn(relatedTable, foreignField!),
-                    foreignColumn: tsToSqlColumn(currentTable, localField!)
-                })
+                const oneToMany = findForeignKey(
+                    relatedTable,
+                    currentTableName,
+                    {
+                        localColumn: tsToSqlColumn(relatedTable, foreignField!),
+                        foreignColumn: tsToSqlColumn(currentTable, localField!)
+                    }
+                )
                 if (oneToMany) {
                     detectedMany = true
                 } else {
                     // Try many-to-one: FK on current table
-                    const manyToOne = findForeignKey(currentTable, relatedTableName, {
-                        localColumn: tsToSqlColumn(currentTable, localField!),
-                        foreignColumn: tsToSqlColumn(relatedTable, foreignField!)
-                    })
+                    const manyToOne = findForeignKey(
+                        currentTable,
+                        relatedTableName,
+                        {
+                            localColumn: tsToSqlColumn(
+                                currentTable,
+                                localField!
+                            ),
+                            foreignColumn: tsToSqlColumn(
+                                relatedTable,
+                                foreignField!
+                            )
+                        }
+                    )
                     if (manyToOne) {
                         detectedMany = false
                     } else {
@@ -233,12 +264,12 @@ export function resolveForeignKey(
             }
         }
     }
-    
+
     // If many is still undefined after processing, default to false (many-to-one)
     if (detectedMany === undefined) {
         detectedMany = false
     }
-    
+
     // Convert TypeScript property names to SQL column names if provided
     const currentSqlColumn = localField
         ? tsToSqlColumn(currentTable, localField)
@@ -282,14 +313,14 @@ export function resolveForeignKey(
             relatedTableName,
             currentTableName,
             {
-                localColumn: foreignColumn,  // FK column on related table (todos.userId)
-                foreignColumn: localColumn  // Referenced column on current table (profiles.id)
+                localColumn: foreignColumn, // FK column on related table (todos.userId)
+                foreignColumn: localColumn // Referenced column on current table (profiles.id)
             }
         )
 
         return {
-            localColumn: localColumn,  // Column on current table (profiles.id)
-            foreignColumn: foreignColumn,  // Column on related table (todos.userId)
+            localColumn: localColumn, // Column on current table (profiles.id)
+            foreignColumn: foreignColumn, // Column on related table (todos.userId)
             foreignTable: relatedTableName,
             isOneToMany: true
         }
@@ -337,7 +368,11 @@ export function getFKInfo<TSchema extends Record<string, AnyPgTable>>(
     relationConfig: {
         table: string
         many?: boolean
-        on?: string | Record<string, string> | Partial<Record<string, string>> | unknown
+        on?:
+            | string
+            | Record<string, string>
+            | Partial<Record<string, string>>
+            | unknown
     }
 ): FKInfo {
     const currentTable = schema[currentTableKey]

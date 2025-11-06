@@ -24,6 +24,7 @@
     "author": "daveycodez",
     "license": "MIT",
     "devDependencies": {
+        "@supabase/postgrest-js": "^2.79.0",
         "@tanstack/query-core": "^5.90.6",
         "@types/node": "^24.10.0",
         "drizzle-orm": "^0.44.7",
@@ -33,6 +34,7 @@
     },
     "peerDependencies": {
         "@pglofi/core": "workspace:*",
+        "@supabase/postgrest-js": ">=2.79.0",
         "@tanstack/query-core": ">=5.90.0"
     }
 }

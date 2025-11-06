@@ -4,8 +4,10 @@ import {
     type LofiConfig,
     type QueryConfig,
     type TableKey,
-    type TablesOnly
+    type TablesOnly,
+    tokenStore
 } from "@pglofi/core"
+import { useStore } from "@tanstack/react-store"
 import { useQuery as useQueryPrimitive } from "./hooks/use-query"
 
 export async function createLofi<TSchema extends Record<string, unknown>>(
@@ -29,6 +31,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 
     return {
         ...lofi,
-        useQuery
+        useQuery,
+        useToken: () => useStore(tokenStore)
     }
 }

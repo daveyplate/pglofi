@@ -445,6 +445,9 @@ importers:
         specifier: workspace:*
         version: link:../core
     devDependencies:
+      '@supabase/postgrest-js':
+        specifier: ^2.79.0
+        version: 2.79.0
       '@tanstack/query-core':
         specifier: ^5.90.6
         version: 5.90.6

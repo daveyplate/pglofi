@@ -58,7 +58,7 @@ export function normalizeSortConfig<TTable extends AnyPgTable>(
             ascending: boolean
             stringSort?: "lexical" | "locale"
         }> = []
-        
+
         for (const [column, direction] of Object.entries(orderByConfig)) {
             const sqlColumn = table ? tsToSqlColumn(table, column) : column
             const stringSort = table

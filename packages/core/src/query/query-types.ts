@@ -31,11 +31,26 @@ type RelationConfig<
 } & (
     | {
           many?: false | undefined
-          on?: ColumnNames<TSchema[TTableKey]> | ColumnNames<TSchema[TRelatedTableName]> | Partial<Record<ColumnNames<TSchema[TTableKey]>, ColumnNames<TSchema[TRelatedTableName]>>>
+          on?:
+              | ColumnNames<TSchema[TTableKey]>
+              | ColumnNames<TSchema[TRelatedTableName]>
+              | Partial<
+                    Record<
+                        ColumnNames<TSchema[TTableKey]>,
+                        ColumnNames<TSchema[TRelatedTableName]>
+                    >
+                >
       }
     | {
           many: true
-          on?: ColumnNames<TSchema[TRelatedTableName]> | Partial<Record<ColumnNames<TSchema[TTableKey]>, ColumnNames<TSchema[TRelatedTableName]>>>
+          on?:
+              | ColumnNames<TSchema[TRelatedTableName]>
+              | Partial<
+                    Record<
+                        ColumnNames<TSchema[TTableKey]>,
+                        ColumnNames<TSchema[TRelatedTableName]>
+                    >
+                >
       }
 )
 

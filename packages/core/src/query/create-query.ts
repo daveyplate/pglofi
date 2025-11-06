@@ -30,13 +30,15 @@ export function getQuery<
     schema: TSchema,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: TQueryConfig
-) {
+):
+    | QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]>
+    | undefined {
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
         ? `pglofi:${tableName}:${JSON.stringify(config)}`
         : `pglofi:default`
 
-    queryStores.get(queryKey)
+    return queryStores.get(queryKey)
 }
 
 export function createQuery<

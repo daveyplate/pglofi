@@ -5,6 +5,7 @@ import { getTableName, type InferSelectModel } from "drizzle-orm"
 import { isEqual } from "lodash-es"
 import { addRxPlugin } from "rxdb/plugins/core"
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
+
 import {
     collectionsStore,
     createCollections
@@ -36,7 +37,7 @@ import {
     type TablesOnly
 } from "./utils/schema-filter"
 
-const tokenStore = new Store<string | undefined>(undefined)
+export const tokenStore = new Store<string | undefined>(undefined)
 const syncStartedStore = new Store(false)
 
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
