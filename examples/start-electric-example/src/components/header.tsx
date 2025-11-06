@@ -2,14 +2,14 @@ import { GitHubIcon, UserButton } from "@daveyplate/better-auth-ui"
 import { Link } from "@tanstack/react-router"
 import { ModeToggle } from "./mode-toggle"
 import { Button } from "./ui/button"
+import { Separator } from "./ui/separator"
 
 export function Header() {
     return (
         <header className="sticky top-0 z-50 flex h-12 justify-between border-b bg-background/60 px-safe-or-4 backdrop-blur md:h-14 md:px-safe-or-6">
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4">
                 <Link to="/" className="flex items-center gap-2">
                     <svg
-                        aria-label="Better-Auth Logo"
                         className="size-5"
                         fill="none"
                         height="45"
@@ -17,7 +17,7 @@ export function Header() {
                         width="60"
                         xmlns="http://www.w3.org/2000/svg"
                     >
-                        <title>Better Auth UI Logo</title>
+                        <title>pgLofi</title>
                         <path
                             className="fill-black dark:fill-white"
                             clipRule="evenodd"
@@ -25,23 +25,24 @@ export function Header() {
                             fillRule="evenodd"
                         />
                     </svg>
-                    BETTER-AUTH. STARTER
+                    pgLofi
                 </Link>
-                <nav className="flex items-center gap-4">
-                    <Link
-                        to="/todos"
-                        className="text-sm font-medium transition-colors hover:text-foreground/80 text-foreground/60"
-                    >
-                        Todos
-                    </Link>
-                </nav>
+
+                <Separator orientation="vertical" />
+
+                <Link
+                    to="/todos"
+                    className="font-medium text-sm hover:underline"
+                >
+                    Todos
+                </Link>
             </div>
 
             <div className="flex items-center gap-2">
                 <a
-                    href="https://github.com/daveyplate/better-auth-nextjs-starter"
+                    href="https://github.com/daveyplate/better-auth-nextjs-neon-starter"
                     target="_blank"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                 >
                     <Button
                         variant="outline"
@@ -53,7 +54,6 @@ export function Header() {
                 </a>
 
                 <ModeToggle />
-
                 <UserButton size="icon" />
             </div>
         </header>
