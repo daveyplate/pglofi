@@ -1,6 +1,10 @@
 import type { Collection } from "@tanstack/db"
 import { Store } from "@tanstack/store"
-import { getTableName, type InferSelectModel } from "drizzle-orm"
+import {
+    getTableName,
+    type InferInsertModel,
+    type InferSelectModel
+} from "drizzle-orm"
 import { isEqual } from "lodash-es"
 import { addRxPlugin } from "rxdb/plugins/core"
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
@@ -26,6 +30,7 @@ import {
     type LofiConfig,
     receiveConfig
 } from "./database/lofi-config"
+import { deleteEntity, insertEntity, updateEntity } from "./mutators/mutators"
 import { createQuery } from "./query/create-query"
 import type { QueryConfig } from "./query/query-types"
 import { subscribeQuery } from "./query/subscribe-query"
@@ -58,6 +63,19 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
         tableKey?: TTableKey | null | 0 | false | "",
         query?: TQueryConfig
     ) => () => void
+    insert: <TTableKey extends TableKey<TSchema>>(
+        tableKey: TTableKey,
+        values: InferInsertModel<TablesOnly<TSchema>[TTableKey]>
+    ) => Promise<InferSelectModel<TablesOnly<TSchema>[TTableKey]>>
+    update: <TTableKey extends TableKey<TSchema>>(
+        tableKey: TTableKey,
+        id: string,
+        fields: Partial<InferInsertModel<TablesOnly<TSchema>[TTableKey]>>
+    ) => Promise<void>
+    delete: <TTableKey extends TableKey<TSchema>>(
+        tableKey: TTableKey,
+        id: string
+    ) => Promise<void>
     collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
     replicationStates: ReplicationStates<TSchema>
@@ -192,6 +210,12 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
                 query,
                 resolvedConfig.plugins
             ),
+        insert: (tableKey, values) =>
+            insertEntity(sanitizedSchema, collections, tableKey, values),
+        update: (tableKey, id, fields) =>
+            updateEntity(sanitizedSchema, collections, tableKey, id, fields),
+        delete: (tableKey, id) =>
+            deleteEntity(sanitizedSchema, collections, tableKey, id),
         collections,
         pullStreams,
         replicationStates,
