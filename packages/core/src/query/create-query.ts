@@ -10,7 +10,7 @@ export type QueryResult<TData = unknown[]> = {
     isPending: boolean
     data: TData
     remoteData: TData | null
-    error?: Error
+    error: Error | null
     refetch?: () => void
 }
 
@@ -90,10 +90,13 @@ export function createQuery<
     }
 
     const store = new Store<QueryResult<TQueryResult>>({
-        isPending: !data?.length,
+        isPending: data.length === 0,
         data,
-        remoteData: null
+        remoteData: null,
+        error: null
     })
+
+    console.log("store", store.state)
 
     queryStores.set(queryKey, store)
 

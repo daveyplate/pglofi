@@ -42,10 +42,10 @@ import {
 } from "./utils/schema-filter"
 
 export const tokenStore = new Store<string | undefined>(undefined)
-const syncStartedStore = new Store(false)
+export const syncStartedStore = new Store(false)
 
 type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
-    setToken: (token: string) => void
+    setToken: (token?: string) => void
     startSync: () => void
     createQuery: <
         TTableKey extends TableKey<TSchema>,
@@ -193,13 +193,20 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     const replicationStates =
         replicationStatesStore.state as ReplicationStates<TSchema>
 
+    const startSync = async () => {
+        for (const tableKey in replicationStates) {
+            await replicationStates[tableKey].start()
+        }
+
+        syncStartedStore.setState(true)
+    }
     return {
-        setToken: (token: string) => {
+        setToken: (token) => {
             tokenStore.setState(token)
+
+            if (token) startSync()
         },
-        startSync: () => {
-            syncStartedStore.setState(true)
-        },
+        startSync,
         createQuery: (tableKey, query) =>
             createQuery(sanitizedSchema, collections, tableKey, query),
         subscribeQuery: (tableKey, query) =>

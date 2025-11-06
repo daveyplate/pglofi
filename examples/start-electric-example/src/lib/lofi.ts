@@ -5,5 +5,10 @@ import * as schema from "@/database/schema"
 export const lofi = await createLofi({
     schema: schema,
     storage: "memory",
-    plugins: [postgrestSync({ dbURL: import.meta.env.VITE_NEON_DATA_API_URL })]
+    autoStart: false,
+    plugins: [
+        postgrestSync({
+            dbURL: import.meta.env.VITE_NEON_DATA_API_URL
+        })
+    ]
 })

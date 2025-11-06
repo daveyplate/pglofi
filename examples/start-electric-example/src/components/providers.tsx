@@ -1,22 +1,19 @@
 import { AuthUIProvider } from "@daveyplate/better-auth-ui"
-import { tokenStore } from "@pglofi/core"
 import { Link, useRouter } from "@tanstack/react-router"
 import { ThemeProvider } from "next-themes"
 import { useEffect } from "react"
 
 import { authClient } from "@/lib/auth-client"
+import { lofi } from "@/lib/lofi"
 import { MetaTheme } from "./meta-theme"
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const { navigate } = useRouter()
-    const { data: sessionData, isPending: sessionPending } =
-        authClient.useSession()
+    const { data: sessionData } = authClient.useSession()
 
     useEffect(() => {
-        if (sessionPending) return
-
-        tokenStore.setState(sessionData?.session.token)
-    }, [sessionData, sessionPending])
+        lofi.setToken(sessionData?.session.token)
+    }, [sessionData])
 
     return (
         <ThemeProvider

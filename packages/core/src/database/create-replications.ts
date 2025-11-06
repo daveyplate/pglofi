@@ -1,7 +1,10 @@
 import { Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { RxDatabase, RxReplicationPullStreamItem } from "rxdb"
-import { replicateRxCollection } from "rxdb/plugins/replication"
+import {
+    type RxReplicationState,
+    replicateRxCollection
+} from "rxdb/plugins/replication"
 import { Subject } from "rxjs"
 import {
     filterTableSchema,
@@ -10,9 +13,6 @@ import {
 } from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
 
-// biome-ignore lint/suspicious/noExplicitAny: Complex generic typing with RxDB replication
-type ReplicationState = any
-
 export type PullStreams<TSchema extends Record<string, unknown>> = Record<
     TableKey<TSchema>,
     Subject<RxReplicationPullStreamItem<unknown, unknown>>
@@ -20,7 +20,7 @@ export type PullStreams<TSchema extends Record<string, unknown>> = Record<
 
 export type ReplicationStates<TSchema extends Record<string, unknown>> = Record<
     TableKey<TSchema>,
-    ReplicationState
+    RxReplicationState<unknown, unknown>
 >
 
 // Add type annotation to stores to avoid inferred type warnings
@@ -28,8 +28,9 @@ export const pullStreamsStore: Store<
     Record<string, Subject<RxReplicationPullStreamItem<unknown, unknown>>>
 > = new Store({})
 
-export const replicationStatesStore: Store<Record<string, ReplicationState>> =
-    new Store({})
+export const replicationStatesStore: Store<
+    Record<string, RxReplicationState<unknown, unknown>>
+> = new Store({})
 
 export async function createReplications<
     TSchema extends Record<string, unknown>
@@ -87,7 +88,11 @@ export async function createReplications<
             Subject<RxReplicationPullStreamItem<unknown, unknown>>
         >
     )
+
     replicationStatesStore.setState(
-        replicationStates as Record<string, ReplicationState>
+        replicationStates as Record<
+            string,
+            RxReplicationState<unknown, unknown>
+        >
     )
 }

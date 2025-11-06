@@ -34,6 +34,7 @@ export function receiveConfig<TSchema extends Record<string, unknown>>(
             devMode: process.env.NODE_ENV === "development",
             name: "pglofi",
             version: 0,
+            autoStart: true,
             ...config
         }
     }
@@ -46,6 +47,7 @@ export function receiveConfig<TSchema extends Record<string, unknown>>(
         name: window.location.hostname
             .replace(/[^a-z0-9]/gi, "_")
             .toLowerCase(),
+        autoStart: true,
         ...config
     }
 }

@@ -2,6 +2,7 @@ import { getQuery, type QueryConfig, tokenStore } from "@pglofi/core"
 import { QueryClient, QueryObserver } from "@tanstack/query-core"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+
 import { getPostgrest } from "../client/postgrest"
 import { applyPostgrestFilters } from "../query/include-filters"
 import { buildSelectString } from "../query/select-builder"
@@ -49,8 +50,6 @@ export function syncQuery<
     queryClient?: QueryClient,
     dbURL?: string
 ) {
-    console.log("[PostgrestSync] syncing query", { tableKey, config })
-
     const table = schema[tableKey]
     const tableName = getTableName(table)
     const selectString = buildSelectString(schema, tableKey, config)
@@ -78,8 +77,6 @@ export function syncQuery<
     const observer = new QueryObserver(client, {
         queryKey,
         queryFn: async () => {
-            console.log("[PostgrestSync] QUERY!!", { tableName, config })
-
             const postgrest = getPostgrest(dbURL, tokenStore.state)
 
             // Determine if we need to fetch multiple pages
@@ -159,21 +156,17 @@ export function syncQuery<
     })
 
     const unsubscribe = observer.subscribe((result) => {
-        console.log("[PostgrestSync] observer result", result)
-
-        // Update the queryStore with remoteData and set isPending to false
         if (queryStore) {
             queryStore.setState((prev) => ({
                 ...prev,
-                remoteData: result.data as unknown[],
-                isPending: result.isPending ?? false,
-                error: result.error ?? undefined
+                remoteData: result.data,
+                isPending: prev.isPending && result.isPending,
+                error: result.error
             }))
         }
     })
 
     return () => {
-        console.log("[PostgrestSync] cleaning up sync for", tableKey)
         unsubscribe()
     }
 }

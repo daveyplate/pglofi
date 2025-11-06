@@ -19,12 +19,14 @@ export const Route = createFileRoute("/todos")({
 
 function TodosPage() {
     const { user } = useAuthenticate()
-    const token = lofi.useToken()
     const [q, setQ] = useState("")
     const throttledQ = useThrottle(q, 300)
 
-    const { data: todos, isPending } = lofi.useQuery(token && "todos", {
+    const { data: todos, isPending } = lofi.useQuery(user && "todos", {
         include: { user: "profiles" },
+        where: {
+            task: { ilike: `%${throttledQ}%` }
+        },
         sort: [{ createdAt: "desc" }]
     })
 
@@ -65,7 +67,7 @@ function TodosPage() {
             <div className="flex flex-col gap-4">
                 {isPending ? (
                     [...Array(3)].map((_, index) => (
-                        <TodoSkeleton key={index} />
+                        <TodoSkeleton key={index.toString()} />
                     ))
                 ) : todos?.length === 0 ? (
                     <p>No todos</p>
