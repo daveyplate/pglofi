@@ -1,4 +1,3 @@
-import { Shape, ShapeStream } from "@electric-sql/client"
 import type { Collection } from "@tanstack/db"
 import { Store } from "@tanstack/store"
 import { getTableName, type InferSelectModel } from "drizzle-orm"
@@ -130,28 +129,27 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 
                     if (!pullStream$) continue
 
-                    const stream = new ShapeStream({
-                        url: resolvedConfig.shapeURL,
-                        params: {
-                            table: tableName
-                        },
-                        headers: tokenStore.state
-                            ? { Authorization: `Bearer ${tokenStore.state}` }
-                            : undefined
-                    })
+                    // const stream = new ShapeStream({
+                    //     url: resolvedConfig.shapeURL,
+                    //     params: {
+                    //         table: tableName
+                    //     },
+                    //     headers: tokenStore.state
+                    //         ? { Authorization: `Bearer ${tokenStore.state}` }
+                    //         : undefined
+                    // })
 
-                    const shape = new Shape(stream)
-                    shape.subscribe((data) => {
-                        // Transform data rows to match the expected format
-                        pullStream$.next({
-                            checkpoint: {},
-                            documents: data.rows.map((row) => ({
-                                id: String(row.id),
-                                ...row,
-                                _deleted: false
-                            }))
-                        })
-                    })
+                    // const shape = new Shape(stream)
+                    // shape.subscribe((data) => {
+                    //     pullStream$.next({
+                    //         checkpoint: {},
+                    //         documents: data.rows.map((row) => ({
+                    //             id: String(row.id),
+                    //             ...row,
+                    //             _deleted: false
+                    //         }))
+                    //     })
+                    // })
                 }
             }
         }

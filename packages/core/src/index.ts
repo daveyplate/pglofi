@@ -1,4 +1,5 @@
 export * from "./create-lofi"
+export * from "./database/create-replications"
 export * from "./database/lofi-config"
 export * from "./plugin/lofi-plugin"
 export * from "./query/create-query"

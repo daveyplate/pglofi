@@ -4,6 +4,7 @@ import type { AnyPgTable } from "drizzle-orm/pg-core"
 import type { LofiPlugin } from "../plugin/lofi-plugin"
 import type { SchemaCollections } from "../utils/schema-filter"
 import { createQuery } from "./create-query"
+import { pushToPullStreams } from "./pullstream-helpers"
 import { buildQuery, flatToHierarchical } from "./query-builder"
 import type { InferQueryResult, QueryConfig } from "./query-types"
 
@@ -65,6 +66,17 @@ export function subscribeQuery<
 
     queryCollection.startSyncImmediate()
 
+    // Watch for changes to remoteData and push to pullStreams
+    const remoteDataUnsubscribe = queryStore.subscribe(
+        ({ prevVal, currentVal: { remoteData } }) => {
+            if (prevVal.remoteData === remoteData) return
+            if (!remoteData?.length) return
+
+            // Push to pullStreams with includes handling
+            pushToPullStreams(schema, tableKey, remoteData, config)
+        }
+    )
+
     const pluginCleanups: Array<() => void> = []
     if (plugins) {
         for (const plugin of plugins) {
@@ -77,6 +89,7 @@ export function subscribeQuery<
 
     return () => {
         subscription.unsubscribe()
+        remoteDataUnsubscribe()
         queryCollection.cleanup()
 
         for (const cleanup of pluginCleanups) {
