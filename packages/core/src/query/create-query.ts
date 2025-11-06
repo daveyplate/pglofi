@@ -96,8 +96,6 @@ export function createQuery<
         error: null
     })
 
-    console.log("store", store.state)
-
     queryStores.set(queryKey, store)
 
     return store
