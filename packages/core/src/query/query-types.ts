@@ -72,6 +72,13 @@ export type IncludeConfig<
         | AnyRelationConfig<TSchema, TTableKey>
 }
 
+// Helper type to ensure exact match (no extra properties)
+type NoExtraProperties<T, U> = U extends T
+    ? Exclude<keyof U, keyof T> extends never
+        ? U
+        : never
+    : never
+
 // Define the query configuration structure
 export type QueryConfig<
     TSchema extends Record<string, AnyPgTable>,

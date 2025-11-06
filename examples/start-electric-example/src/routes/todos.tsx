@@ -27,7 +27,7 @@ function TodosPage() {
         where: {
             task: { ilike: `%${throttledQ}%` }
         },
-        sort: [{ createdAt: "desc" }]
+        orderBy: [{ createdAt: "desc" }]
     })
 
     const insertTodo = (todo: Todo) => {

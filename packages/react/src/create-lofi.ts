@@ -10,6 +10,11 @@ import {
 import { useStore } from "@tanstack/react-store"
 import { useQuery as useQueryPrimitive } from "./hooks/use-query"
 
+// Helper type to ensure no extra properties are passed
+type NoExtraProperties<T, U extends T> = U & {
+    [K in Exclude<keyof U, keyof T>]: never
+}
+
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
@@ -19,7 +24,13 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     function useQuery<
         TTableKey extends TableKey<TSchema>,
         TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
-    >(tableKey?: TTableKey | null | 0 | false | "", query?: TQueryConfig) {
+    >(
+        tableKey?: TTableKey | null | 0 | false | "",
+        query?: NoExtraProperties<
+            QueryConfig<TablesOnly<TSchema>, TTableKey>,
+            TQueryConfig
+        >
+    ) {
         return useQueryPrimitive(
             sanitizedSchema,
             lofi.collections,
