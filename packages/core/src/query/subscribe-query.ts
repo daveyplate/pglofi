@@ -7,7 +7,7 @@ import type { SchemaCollections } from "../utils/schema-filter"
 import { createQuery } from "./create-query"
 import { pushToPullStreams } from "./pullstream-helpers"
 import { buildQuery, flatToHierarchical } from "./query-builder"
-import type { InferQueryResult, QueryConfig } from "./query-types"
+import type { InferQueryResult, QueryConfig, StrictQueryConfig } from "./query-types"
 
 export function subscribeQuery<
     TSchema extends Record<string, AnyPgTable>,
@@ -17,7 +17,7 @@ export function subscribeQuery<
     schema: TSchema,
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQueryConfig,
+    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
     plugins?: LofiPlugin<TSchema>[]
 ) {
     if (!tableKey) return () => {}

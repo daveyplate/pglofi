@@ -32,7 +32,7 @@ import {
 } from "./database/lofi-config"
 import { deleteEntity, insertEntity, updateEntity } from "./mutators/mutators"
 import { createQuery } from "./query/create-query"
-import type { QueryConfig } from "./query/query-types"
+import type { QueryConfig, StrictQueryConfig } from "./query/query-types"
 import { subscribeQuery } from "./query/subscribe-query"
 import {
     filterTableSchema,
@@ -52,7 +52,7 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
         TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(
         tableKey?: TTableKey | null | 0 | false | "",
-        query?: TQueryConfig
+        query?: StrictQueryConfig<TablesOnly<TSchema>, TTableKey, TQueryConfig>
     ) => ReturnType<
         typeof createQuery<TablesOnly<TSchema>, TTableKey, TQueryConfig>
     >
@@ -61,7 +61,7 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
         TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
     >(
         tableKey?: TTableKey | null | 0 | false | "",
-        query?: TQueryConfig
+        query?: StrictQueryConfig<TablesOnly<TSchema>, TTableKey, TQueryConfig>
     ) => () => void
     insert: <TTableKey extends TableKey<TSchema>>(
         tableKey: TTableKey,

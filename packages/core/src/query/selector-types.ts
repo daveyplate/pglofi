@@ -28,6 +28,28 @@ export type ComparisonCondition<TValue> =
     | { ilike: string } // Only for string columns
     | { in: TValue[] }
 
+// Strict comparison condition that ensures no extra properties
+export type StrictComparisonCondition<TValue, T> = 
+    T extends { eq: TValue }
+        ? keyof T extends "eq" ? T : never
+    : T extends { neq: TValue }
+        ? keyof T extends "neq" ? T : never
+    : T extends { gt: TValue }
+        ? keyof T extends "gt" ? T : never
+    : T extends { gte: TValue }
+        ? keyof T extends "gte" ? T : never
+    : T extends { lt: TValue }
+        ? keyof T extends "lt" ? T : never
+    : T extends { lte: TValue }
+        ? keyof T extends "lte" ? T : never
+    : T extends { like: string }
+        ? keyof T extends "like" ? T : never
+    : T extends { ilike: string }
+        ? keyof T extends "ilike" ? T : never
+    : T extends { in: TValue[] }
+        ? keyof T extends "in" ? T : never
+    : never
+
 // Logical operators (SQL style)
 export type LogicalOperator = "and" | "or" | "not" | "nor"
 
@@ -37,6 +59,20 @@ type BaseWhereConfig<TTable extends AnyPgTable> = {
         | TTable["_"]["columns"][K]["_"]["data"]
         | ComparisonCondition<TTable["_"]["columns"][K]["_"]["data"]>
 }
+
+// Strict base where config that validates comparison conditions
+type StrictBaseWhereConfig<TTable extends AnyPgTable, T> = 
+    keyof T extends ColumnNames<TTable>
+        ? {
+            [K in keyof T]: K extends ColumnNames<TTable>
+                ? T[K] extends TTable["_"]["columns"][K]["_"]["data"]
+                    ? T[K]
+                    : T[K] extends object
+                        ? StrictComparisonCondition<TTable["_"]["columns"][K]["_"]["data"], T[K]>
+                        : never
+                : never
+          }
+        : never
 
 // Where clause with optional logical operators (SQL style)
 export type WhereConfig<TTable extends AnyPgTable> =
@@ -53,6 +89,36 @@ export type WhereConfig<TTable extends AnyPgTable> =
     | {
           nor?: WhereConfig<TTable>[]
       }
+
+// Helper type that ensures no excess properties in where config
+type NoExcessWhereProperties<T, TTable extends AnyPgTable> = 
+    T extends BaseWhereConfig<TTable>
+        ? keyof T extends ColumnNames<TTable>
+            ? StrictBaseWhereConfig<TTable, T>
+            : never
+        : T extends { and: infer A }
+            ? A extends WhereConfig<TTable>[]
+                ? { and: StrictWhereConfig<TTable, A[number]>[] }
+                : never
+        : T extends { or: infer O }
+            ? O extends WhereConfig<TTable>[]
+                ? { or: StrictWhereConfig<TTable, O[number]>[] }
+                : never
+        : T extends { not: infer N }
+            ? N extends WhereConfig<TTable>
+                ? { not: StrictWhereConfig<TTable, N> }
+                : never
+        : T extends { nor: infer N }
+            ? N extends WhereConfig<TTable>[]
+                ? { nor: StrictWhereConfig<TTable, N[number]>[] }
+                : never
+        : never
+
+// Strict version that enforces exact WhereConfig shape
+export type StrictWhereConfig<
+    TTable extends AnyPgTable,
+    T
+> = NoExcessWhereProperties<T, TTable>
 
 // Legacy type alias for backwards compatibility during migration
 export type SelectorConfig<TTable extends AnyPgTable> = WhereConfig<TTable>

@@ -25,7 +25,8 @@ function TodosPage() {
     const { data: todos, isPending } = lofi.useQuery(user && "todos", {
         include: { user: "profiles" },
         where: {
-            task: { ilike: `%${throttledQ}%` }
+            userId: user?.id,
+            ...(throttledQ && { task: { ilike: `%${throttledQ}%` } })
         },
         sort: [{ createdAt: "desc" }]
     })

@@ -1,6 +1,6 @@
 import type { InferSelectModel } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import type { WhereConfig } from "./selector-types"
+import type { StrictWhereConfig, WhereConfig } from "./selector-types"
 
 // Helper type to get column names from a table
 type ColumnNames<TTable extends AnyPgTable> = keyof TTable["_"]["columns"] &
@@ -72,6 +72,54 @@ export type IncludeConfig<
         | AnyRelationConfig<TSchema, TTableKey>
 }
 
+// Strict relation config that ensures no extra properties
+type StrictRelationConfig<
+    TSchema extends Record<string, AnyPgTable>,
+    TTableKey extends keyof TSchema,
+    T
+> = T extends { table: infer Table }
+    ? Table extends keyof TSchema & string
+        ? T extends { many: true }
+            ? keyof T extends "table" | "include" | "where" | "limit" | "offset" | "orderBy" | "many" | "on"
+                ? T & (T extends { where: infer W }
+                    ? W extends object
+                        ? { where?: StrictWhereConfig<TSchema[Table], W> }
+                        : {}
+                    : {}) &
+                  (T extends { include: infer I }
+                    ? I extends object
+                        ? { include?: StrictIncludeConfig<TSchema, Table, I> }
+                        : {}
+                    : {})
+                : never
+            : keyof T extends "table" | "include" | "where" | "limit" | "offset" | "orderBy" | "many" | "on"
+                ? T & (T extends { where: infer W }
+                    ? W extends object
+                        ? { where?: StrictWhereConfig<TSchema[Table], W> }
+                        : {}
+                    : {}) &
+                  (T extends { include: infer I }
+                    ? I extends object
+                        ? { include?: StrictIncludeConfig<TSchema, Table, I> }
+                        : {}
+                    : {})
+                : never
+        : never
+    : T extends string
+        ? T extends keyof TSchema & string
+            ? T
+            : never
+        : never
+
+// Strict include config that validates all relations
+export type StrictIncludeConfig<
+    TSchema extends Record<string, AnyPgTable>,
+    TTableKey extends keyof TSchema,
+    T
+> = {
+    [K in keyof T]: StrictRelationConfig<TSchema, TTableKey, T[K]>
+}
+
 // Define the query configuration structure
 export type QueryConfig<
     TSchema extends Record<string, AnyPgTable>,
@@ -83,6 +131,30 @@ export type QueryConfig<
     offset?: number
     orderBy?: OrderByConfig<TSchema[TTableKey]>
 }
+
+// Helper type that ensures no excess properties
+type NoExcessProperties<T, U> = T extends U
+    ? keyof T extends keyof U
+        ? T
+        : never
+    : never
+
+// Strict version that enforces exact QueryConfig shape
+export type StrictQueryConfig<
+    TSchema extends Record<string, AnyPgTable>,
+    TTableKey extends keyof TSchema,
+    T
+> = NoExcessProperties<T, QueryConfig<TSchema, TTableKey>> &
+    (T extends { where: infer W } 
+        ? W extends object
+            ? { where?: StrictWhereConfig<TSchema[TTableKey], W> }
+            : {}
+        : {}) &
+    (T extends { include: infer I }
+        ? I extends object
+            ? { include?: StrictIncludeConfig<TSchema, TTableKey, I> }
+            : {}
+        : {})
 
 // Helper type to infer the result type based on the query configuration
 export type InferQueryResult<

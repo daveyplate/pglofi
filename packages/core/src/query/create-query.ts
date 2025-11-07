@@ -4,7 +4,7 @@ import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import type { SchemaCollections } from "../utils/schema-filter"
 import { buildQuery, flatToHierarchical } from "./query-builder"
-import type { InferQueryResult, QueryConfig } from "./query-types"
+import type { InferQueryResult, QueryConfig, StrictQueryConfig } from "./query-types"
 
 export type QueryResult<TData = unknown[]> = {
     isPending: boolean
@@ -29,9 +29,15 @@ export function getQuery<
 >(
     schema: TSchema,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQueryConfig
+    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
 ):
-    | QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]>
+    | QueryStore<
+          InferQueryResult<
+              TSchema,
+              TTableKey,
+              TQueryConfig
+          >[]
+      >
     | undefined {
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
@@ -49,9 +55,15 @@ export function createQuery<
     schema: TSchema,
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQueryConfig
-): QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]> {
-    type TQueryResult = InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
+    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
+): QueryStore<
+    InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
+> {
+    type TQueryResult = InferQueryResult<
+        TSchema,
+        TTableKey,
+        TQueryConfig
+    >[]
 
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
