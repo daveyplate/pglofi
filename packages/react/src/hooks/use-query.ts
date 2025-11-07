@@ -1,6 +1,7 @@
 import {
     createQuery,
     type QueryConfig,
+    type StrictQueryConfig,
     type SchemaCollections
 } from "@pglofi/core"
 import { useStore } from "@tanstack/react-store"
@@ -17,13 +18,13 @@ export function useQuery<
     schema: TSchema,
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
-    config?: TQueryConfig,
+    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
     subscribeQueryFn?: <
         TTableKeyInner extends keyof TSchema,
         TQueryConfigInner extends QueryConfig<TSchema, TTableKeyInner>
     >(
         tableKey?: TTableKeyInner | null | 0 | false | "",
-        query?: TQueryConfigInner
+        query?: StrictQueryConfig<TSchema, TTableKeyInner, TQueryConfigInner>
     ) => () => void
 ) {
     const hydrated = useHydrated()

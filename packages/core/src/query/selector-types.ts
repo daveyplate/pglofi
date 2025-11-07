@@ -58,21 +58,24 @@ type BaseWhereConfig<TTable extends AnyPgTable> = {
     [K in ColumnNames<TTable>]?:
         | TTable["_"]["columns"][K]["_"]["data"]
         | ComparisonCondition<TTable["_"]["columns"][K]["_"]["data"]>
+        | undefined
 }
 
 // Strict base where config that validates comparison conditions
 type StrictBaseWhereConfig<TTable extends AnyPgTable, T> = 
-    keyof T extends ColumnNames<TTable>
+    keyof T extends ColumnNames<TTable> | undefined
         ? {
             [K in keyof T]: K extends ColumnNames<TTable>
-                ? T[K] extends TTable["_"]["columns"][K]["_"]["data"]
+                ? T[K] extends TTable["_"]["columns"][K]["_"]["data"] | undefined
                     ? T[K]
-                    : T[K] extends object
-                        ? StrictComparisonCondition<TTable["_"]["columns"][K]["_"]["data"], T[K]>
-                        : never
+                    : T[K] extends ComparisonCondition<TTable["_"]["columns"][K]["_"]["data"]> | undefined
+                        ? T[K]
+                        : T[K] extends object
+                            ? StrictComparisonCondition<TTable["_"]["columns"][K]["_"]["data"], T[K]>
+                            : never
                 : never
           }
-        : never
+        : T
 
 // Where clause with optional logical operators (SQL style)
 export type WhereConfig<TTable extends AnyPgTable> =
@@ -93,7 +96,7 @@ export type WhereConfig<TTable extends AnyPgTable> =
 // Helper type that ensures no excess properties in where config
 type NoExcessWhereProperties<T, TTable extends AnyPgTable> = 
     T extends BaseWhereConfig<TTable>
-        ? keyof T extends ColumnNames<TTable>
+        ? keyof T extends ColumnNames<TTable> | undefined
             ? StrictBaseWhereConfig<TTable, T>
             : never
         : T extends { and: infer A }
