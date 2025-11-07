@@ -10,11 +10,7 @@ import {
 import type { Profile, Todo } from "@/database/schema"
 import { lofi } from "@/lib/lofi"
 
-export default function TodoItem({
-    todo
-}: {
-    todo: Todo & { user: Profile | null }
-}) {
+export function TodoItem({ todo }: { todo: Todo & { user: Profile | null } }) {
     return (
         <div className="flex items-center gap-3 rounded border bg-card px-3 py-2">
             <Checkbox

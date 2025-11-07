@@ -4,13 +4,13 @@ import { useThrottle } from "@uidotdev/usehooks"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
 
+import { TodoItem } from "@/components/todos/todo-item"
+import { TodoSkeleton } from "@/components/todos/todo-skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import type { Todo } from "@/database/schema"
 import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
-import TodoItem from "../components/todos/todo-item"
-import TodoSkeleton from "../components/todos/todo-skeleton"
 
 export const Route = createFileRoute("/todos")({
     component: TodosPage
@@ -30,7 +30,9 @@ function TodosPage() {
         orderBy: { createdAt: "desc" }
     })
 
-    const insertTodo = (todo: Todo) => lofi.insert("todos", todo)
+    const insertTodo = (todo: Todo) => {
+        lofi.insert("todos", todo)
+    }
 
     return (
         <main className="container mx-auto flex flex-col gap-4 p-safe-or-4 md:p-safe-or-6">
