@@ -487,9 +487,6 @@ importers:
       '@pglofi/core':
         specifier: workspace:*
         version: link:../core
-      react:
-        specifier: '>=18.0.0'
-        version: 19.2.0
     devDependencies:
       '@tanstack/react-store':
         specifier: ^0.8.0
@@ -503,6 +500,9 @@ importers:
       drizzle-orm:
         specifier: ^0.44.7
         version: 0.44.7(@neondatabase/serverless@1.0.2)(@prisma/client@5.22.0(prisma@5.22.0))(@types/better-sqlite3@7.6.13)(@types/pg@8.15.6)(better-sqlite3@12.4.1)(kysely@0.28.8)(pg@8.16.3)(prisma@5.22.0)
+      react:
+        specifier: ^19.2.0
+        version: 19.2.0
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

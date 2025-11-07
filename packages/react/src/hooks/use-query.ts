@@ -19,7 +19,7 @@ export function useQuery<
     collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
-    subscribeQueryFn?: <
+    subscribeQuery?: <
         TTableKeyInner extends keyof TSchema,
         TQueryConfigInner extends QueryConfig<TSchema, TTableKeyInner>
     >(
@@ -38,10 +38,9 @@ export function useQuery<
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: schema and collections are stable
     useEffect(() => {
-        if (!tableKey || !subscribeQueryFn) return
+        if (!tableKey || !subscribeQuery) return
 
-        const unsubscribe = subscribeQueryFn(tableKey, config)
-        return unsubscribe
+        return subscribeQuery(tableKey, config)
     }, [tableKey, JSON.stringify(config)])
 
     return useStore(queryStore)

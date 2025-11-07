@@ -9,7 +9,7 @@ import {
     tokenStore
 } from "@pglofi/core"
 import { useStore } from "@tanstack/react-store"
-import { useQuery as useQueryPrimitive } from "./hooks/use-query"
+import { useQuery } from "./hooks/use-query"
 
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
@@ -17,25 +17,26 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     const lofi = await createLofiCore(config)
     const sanitizedSchema = filterTableSchema(config.schema)
 
-    function useQuery<
-        TTableKey extends TableKey<TSchema>,
-        TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
-    >(
-        tableKey?: TTableKey | null | 0 | false | "",
-        query?: StrictQueryConfig<TablesOnly<TSchema>, TTableKey, TQueryConfig>
-    ) {
-        return useQueryPrimitive(
-            sanitizedSchema,
-            lofi.collections,
-            tableKey,
-            query,
-            lofi.subscribeQuery
-        )
-    }
-
     return {
         ...lofi,
-        useQuery,
+        useQuery: <
+            TTableKey extends TableKey<TSchema>,
+            TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
+        >(
+            tableKey?: TTableKey | null | 0 | false | "",
+            query?: StrictQueryConfig<
+                TablesOnly<TSchema>,
+                TTableKey,
+                TQueryConfig
+            >
+        ) =>
+            useQuery(
+                sanitizedSchema,
+                lofi.collections,
+                tableKey,
+                query,
+                lofi.subscribeQuery
+            ),
         useToken: () => useStore(tokenStore)
     }
 }
