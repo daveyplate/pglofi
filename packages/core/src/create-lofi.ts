@@ -1,10 +1,6 @@
 import type { Collection } from "@tanstack/db"
 import { Store } from "@tanstack/store"
-import {
-    getTableName,
-    type InferInsertModel,
-    type InferSelectModel
-} from "drizzle-orm"
+import type { InferInsertModel, InferSelectModel } from "drizzle-orm"
 import { isEqual } from "lodash-es"
 import { addRxPlugin } from "rxdb/plugins/core"
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
@@ -79,7 +75,6 @@ type CreateLofiReturn<TSchema extends Record<string, unknown>> = {
     collections: SchemaCollections<TSchema>
     pullStreams: PullStreams<TSchema>
     replicationStates: ReplicationStates<TSchema>
-    syncStarted: boolean
 }
 
 export async function createLofi<TSchema extends Record<string, unknown>>(
@@ -116,7 +111,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         } catch (error) {
             console.error(error)
 
-            if (!isServer && resolvedConfig.autoResetStorage) {
+            if (!isServer && !resolvedConfig.autoResetStorage) {
                 for (const storage of db.storageInstances) {
                     await storage.remove()
                 }
@@ -128,49 +123,45 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         // Create replications for each table
         await createReplications(resolvedConfig, db)
 
-        if (!isServer) {
-            const schemaTableKeys = Object.keys(
-                sanitizedSchema
-            ) as TableKey<TSchema>[]
+        // if (!isServer) {
+        //     for (const tableKey in sanitizedSchema) {
+        //         const schemaTable = sanitizedSchema[tableKey]
+        //         const tableName = getTableName(schemaTable)
 
-            for (const tableKey of schemaTableKeys) {
-                const schemaTable = sanitizedSchema[tableKey]
-                const tableName = getTableName(schemaTable)
+        //         if (
+        //             resolvedConfig.shapeURL &&
+        //             (tableName === "todos" || tableName === "profiles")
+        //         ) {
+        //             const pullStreams =
+        //                 pullStreamsStore.state as PullStreams<TSchema>
+        //             const pullStream$ = pullStreams[tableKey]
 
-                if (
-                    resolvedConfig.shapeURL &&
-                    (tableName === "todos" || tableName === "profiles")
-                ) {
-                    const pullStreams =
-                        pullStreamsStore.state as PullStreams<TSchema>
-                    const pullStream$ = pullStreams[tableKey]
+        //             if (!pullStream$) continue
 
-                    if (!pullStream$) continue
+        //             const stream = new ShapeStream({
+        //                 url: resolvedConfig.shapeURL,
+        //                 params: {
+        //                     table: tableName
+        //                 },
+        //                 headers: tokenStore.state
+        //                     ? { Authorization: `Bearer ${tokenStore.state}` }
+        //                     : undefined
+        //             })
 
-                    // const stream = new ShapeStream({
-                    //     url: resolvedConfig.shapeURL,
-                    //     params: {
-                    //         table: tableName
-                    //     },
-                    //     headers: tokenStore.state
-                    //         ? { Authorization: `Bearer ${tokenStore.state}` }
-                    //         : undefined
-                    // })
-
-                    // const shape = new Shape(stream)
-                    // shape.subscribe((data) => {
-                    //     pullStream$.next({
-                    //         checkpoint: {},
-                    //         documents: data.rows.map((row) => ({
-                    //             id: String(row.id),
-                    //             ...row,
-                    //             _deleted: false
-                    //         }))
-                    //     })
-                    // })
-                }
-            }
-        }
+        //             const shape = new Shape(stream)
+        //             shape.subscribe((data) => {
+        //                 pullStream$.next({
+        //                     checkpoint: {},
+        //                     documents: data.rows.map((row) => ({
+        //                         id: String(row.id),
+        //                         ...row,
+        //                         _deleted: false
+        //                     }))
+        //                 })
+        //             })
+        //         }
+        //     }
+        // }
     }
 
     configStore.setState(resolvedConfig as LofiConfig<Record<string, unknown>>)
@@ -200,8 +191,9 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 
         syncStartedStore.setState(true)
     }
+
     return {
-        setToken: (token) => {
+        setToken: (token?: string) => {
             tokenStore.setState(token)
 
             if (token) startSync()
@@ -225,7 +217,6 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
             deleteEntity(sanitizedSchema, collections, tableKey, id),
         collections,
         pullStreams,
-        replicationStates,
-        syncStarted: syncStartedStore.state
+        replicationStates
     }
 }
