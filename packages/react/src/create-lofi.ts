@@ -20,7 +20,10 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     function useQuery<
         TTableKey extends TableKey<TSchema>,
         TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
-    >(tableKey?: TTableKey | null | 0 | false | "", query?: StrictQueryConfig<TablesOnly<TSchema>, TTableKey, TQueryConfig>) {
+    >(
+        tableKey?: TTableKey | null | 0 | false | "",
+        query?: StrictQueryConfig<TablesOnly<TSchema>, TTableKey, TQueryConfig>
+    ) {
         return useQueryPrimitive(
             sanitizedSchema,
             lofi.collections,

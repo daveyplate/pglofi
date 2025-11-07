@@ -1,8 +1,8 @@
 import {
     createQuery,
     type QueryConfig,
-    type StrictQueryConfig,
-    type SchemaCollections
+    type SchemaCollections,
+    type StrictQueryConfig
 } from "@pglofi/core"
 import { useStore } from "@tanstack/react-store"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
