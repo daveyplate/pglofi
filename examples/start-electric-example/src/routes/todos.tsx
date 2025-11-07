@@ -9,11 +9,10 @@ import { Input } from "@/components/ui/input"
 import type { Todo } from "@/database/schema"
 import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
-import TodoItem from "./todos/todo-item"
-import TodoSkeleton from "./todos/todo-skeleton"
+import TodoItem from "../components/todos/todo-item"
+import TodoSkeleton from "../components/todos/todo-skeleton"
 
 export const Route = createFileRoute("/todos")({
-    ssr: true,
     component: TodosPage
 })
 
@@ -22,7 +21,7 @@ function TodosPage() {
     const [q, setQ] = useState("")
     const throttledQ = useThrottle(q, 300)
 
-    const { data: todos, isPending } = lofi.useQuery(user && "todos", {
+    const { data: todos, isPending } = lofi.useQuery("todos", {
         include: { user: "profiles" },
         where: {
             userId: user?.id,
@@ -31,9 +30,7 @@ function TodosPage() {
         orderBy: { createdAt: "desc" }
     })
 
-    const insertTodo = (todo: Todo) => {
-        lofi.insert("todos", todo)
-    }
+    const insertTodo = (todo: Todo) => lofi.insert("todos", todo)
 
     return (
         <main className="container mx-auto flex flex-col gap-4 p-safe-or-4 md:p-safe-or-6">

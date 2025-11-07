@@ -18,6 +18,7 @@ export function Header() {
                         xmlns="http://www.w3.org/2000/svg"
                     >
                         <title>pgLofi</title>
+
                         <path
                             className="fill-black dark:fill-white"
                             clipRule="evenodd"
