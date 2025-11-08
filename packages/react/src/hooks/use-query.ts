@@ -1,7 +1,6 @@
 import {
     createQuery,
     type QueryConfig,
-    type SchemaCollections,
     type StrictQueryConfig
 } from "@pglofi/core"
 import { useStore } from "@tanstack/react-store"
@@ -16,7 +15,6 @@ export function useQuery<
     TQueryConfig extends QueryConfig<TSchema, TTableKey>
 >(
     schema: TSchema,
-    collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
     subscribeQuery?: <
@@ -29,12 +27,7 @@ export function useQuery<
 ) {
     const hydrated = useHydrated()
 
-    const queryStore = createQuery(
-        schema,
-        collections,
-        hydrated ? tableKey : null,
-        config
-    )
+    const queryStore = createQuery(schema, hydrated ? tableKey : null, config)
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: schema and collections are stable
     useEffect(() => {

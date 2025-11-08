@@ -1,4 +1,3 @@
-import { Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { RxDatabase, RxReplicationPullStreamItem } from "rxdb"
 import {
@@ -6,6 +5,8 @@ import {
     replicateRxCollection
 } from "rxdb/plugins/replication"
 import { Subject } from "rxjs"
+
+import { pullStreamsStore, replicationStatesStore } from "../stores"
 import {
     filterTableSchema,
     type TableKey,
@@ -22,15 +23,6 @@ export type ReplicationStates<TSchema extends Record<string, unknown>> = Record<
     TableKey<TSchema>,
     RxReplicationState<unknown, unknown>
 >
-
-// Add type annotation to stores to avoid inferred type warnings
-export const pullStreamsStore: Store<
-    Record<string, Subject<RxReplicationPullStreamItem<unknown, unknown>>>
-> = new Store({})
-
-export const replicationStatesStore: Store<
-    Record<string, RxReplicationState<unknown, unknown>>
-> = new Store({})
 
 export async function createReplications<
     TSchema extends Record<string, unknown>

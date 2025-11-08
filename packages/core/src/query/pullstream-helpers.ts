@@ -1,6 +1,6 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { pullStreamsStore } from "../database/create-replications"
+import { pullStreamsStore } from "../stores"
 import type { AnyRelationConfig, QueryConfig } from "./query-types"
 
 /**
@@ -142,4 +142,3 @@ export function pushToPullStreams<
         }
     }
 }
-

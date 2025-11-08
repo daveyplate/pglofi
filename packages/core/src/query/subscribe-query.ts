@@ -1,13 +1,16 @@
 import { createCollection, liveQueryCollectionOptions } from "@tanstack/db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { syncStartedStore } from "../create-lofi"
 import type { LofiPlugin } from "../plugin/lofi-plugin"
-import type { SchemaCollections } from "../utils/schema-filter"
+import { syncStartedStore } from "../stores"
 import { createQuery } from "./create-query"
 import { pushToPullStreams } from "./pullstream-helpers"
 import { buildQuery, flatToHierarchical } from "./query-builder"
-import type { InferQueryResult, QueryConfig, StrictQueryConfig } from "./query-types"
+import type {
+    InferQueryResult,
+    QueryConfig,
+    StrictQueryConfig
+} from "./query-types"
 
 export function subscribeQuery<
     TSchema extends Record<string, AnyPgTable>,
@@ -15,18 +18,17 @@ export function subscribeQuery<
     TQueryConfig extends QueryConfig<TSchema, TTableKey>
 >(
     schema: TSchema,
-    collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
     plugins?: LofiPlugin<TSchema>[]
 ) {
     if (!tableKey) return () => {}
 
-    const queryStore = createQuery(schema, collections, tableKey, config)
+    const queryStore = createQuery(schema, tableKey, config)
     const tableName = getTableName(schema[tableKey])
 
     // Build the query
-    const query = buildQuery(schema, collections, tableKey, config)
+    const query = buildQuery(schema, tableKey, config)
 
     // Create the query collection
     const queryCollection = createCollection(

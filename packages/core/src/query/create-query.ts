@@ -2,9 +2,12 @@ import { createCollection, liveQueryCollectionOptions } from "@tanstack/db"
 import { type AnyUpdater, Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import type { SchemaCollections } from "../utils/schema-filter"
 import { buildQuery, flatToHierarchical } from "./query-builder"
-import type { InferQueryResult, QueryConfig, StrictQueryConfig } from "./query-types"
+import type {
+    InferQueryResult,
+    QueryConfig,
+    StrictQueryConfig
+} from "./query-types"
 
 export type QueryResult<TData = unknown[]> = {
     isPending: boolean
@@ -31,13 +34,7 @@ export function getQuery<
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
 ):
-    | QueryStore<
-          InferQueryResult<
-              TSchema,
-              TTableKey,
-              TQueryConfig
-          >[]
-      >
+    | QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]>
     | undefined {
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
@@ -53,17 +50,10 @@ export function createQuery<
     TQueryConfig extends QueryConfig<TSchema, TTableKey>
 >(
     schema: TSchema,
-    collections: SchemaCollections<TSchema>,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
-): QueryStore<
-    InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
-> {
-    type TQueryResult = InferQueryResult<
-        TSchema,
-        TTableKey,
-        TQueryConfig
-    >[]
+): QueryStore<InferQueryResult<TSchema, TTableKey, TQueryConfig>[]> {
+    type TQueryResult = InferQueryResult<TSchema, TTableKey, TQueryConfig>[]
 
     const tableName = tableKey ? getTableName(schema[tableKey]) : null
     const queryKey = tableName
@@ -77,7 +67,7 @@ export function createQuery<
     let data: TQueryResult = []
 
     if (tableKey) {
-        const query = buildQuery(schema, collections, tableKey, config)
+        const query = buildQuery(schema, tableKey, config)
         const queryCollection = createCollection(
             liveQueryCollectionOptions({
                 query,

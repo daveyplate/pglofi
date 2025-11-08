@@ -29,14 +29,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
                 TTableKey,
                 TQueryConfig
             >
-        ) =>
-            useQuery(
-                sanitizedSchema,
-                lofi.collections,
-                tableKey,
-                query,
-                lofi.subscribeQuery
-            ),
+        ) => useQuery(sanitizedSchema, tableKey, query, lofi.subscribeQuery),
         useToken: () => useStore(tokenStore)
     }
 }

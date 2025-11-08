@@ -1,24 +1,15 @@
-import {
-    type Collection,
-    createCollection,
-    type UtilsRecord
-} from "@tanstack/db"
+import { type Collection, createCollection } from "@tanstack/db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
-import { Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { MigrationStrategies, RxCollectionCreator, RxDatabase } from "rxdb"
+
+import { collectionsStore } from "../stores"
 import {
     filterTableSchema,
     type TableKey,
     type TablesOnly
 } from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
-
-// Add type annotation to collectionsStore to avoid the inferred type warning
-export const collectionsStore: Store<
-    // biome-ignore lint/suspicious/noExplicitAny: ignore
-    Record<string, Collection<any, string, UtilsRecord, never, any>>
-> = new Store({})
 
 export async function createCollections<
     TSchema extends Record<string, unknown>
@@ -143,7 +134,7 @@ export async function createCollections<
                 rxCollection: db[tableName],
                 startSync: true
             })
-        )
+        ) as Collection
 
         collectionsStore.setState((prevState) => ({
             ...prevState,

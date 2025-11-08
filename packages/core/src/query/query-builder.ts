@@ -16,10 +16,9 @@ import {
 } from "@tanstack/db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-
+import { collectionsStore } from "../stores"
 import { type FKInfo, getFKInfo } from "../utils/fk-helpers"
 import { applySortToArray, normalizeSortConfig } from "../utils/order-helpers"
-import type { SchemaCollections } from "../utils/schema-filter"
 import type { OrderByConfig, QueryConfig } from "./query-types"
 import {
     getOperatorAndValue,
@@ -290,7 +289,6 @@ export function buildQuery<
     TTableKey extends keyof TSchema
 >(
     schema: TSchema,
-    collections: SchemaCollections<TSchema>,
     tableKey: TTableKey,
     query?: QueryConfig<TSchema, TTableKey>,
     parentAlias?: string,
@@ -303,8 +301,7 @@ export function buildQuery<
     const alias = parentAlias ?? tableName
 
     // Get collection by table key (SchemaCollections uses table keys, not table names)
-    const tableCollection =
-        collections[tableKey as unknown as keyof typeof collections]
+    const tableCollection = collectionsStore.state[tableKey as string]
 
     if (!tableCollection) {
         throw new Error(
@@ -354,7 +351,7 @@ export function buildQuery<
                     : relationConfig
 
             const relatedCollection =
-                collections[config.table as unknown as keyof typeof collections]
+                collectionsStore.state[config.table as string]
 
             if (!relatedCollection) {
                 throw new Error(
@@ -387,7 +384,6 @@ export function buildQuery<
             // Pass currentQuery to continue building on the existing query
             currentQuery = buildQuery(
                 schema,
-                collections,
                 config.table as keyof TSchema,
                 config as QueryConfig<TSchema, keyof TSchema>,
                 relatedAlias,

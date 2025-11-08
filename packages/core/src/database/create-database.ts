@@ -1,18 +1,17 @@
-import { Store } from "@tanstack/store"
-import {
-    createRxDatabase,
-    type RxDatabase,
-    removeRxDatabase
-} from "rxdb/plugins/core"
+import { createRxDatabase, removeRxDatabase } from "rxdb/plugins/core"
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie"
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
 import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
-import { collectionsStore } from "./create-collections"
-import { pullStreamsStore, replicationStatesStore } from "./create-replications"
-import { configStore, type LofiConfig } from "./lofi-config"
 
-export const dbStore = new Store<RxDatabase | undefined>(undefined)
+import {
+    collectionsStore,
+    configStore,
+    dbStore,
+    pullStreamsStore,
+    replicationStatesStore
+} from "../stores"
+import type { LofiConfig } from "./lofi-config"
 
 export async function createDatabase<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
