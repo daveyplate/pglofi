@@ -35,12 +35,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         syncStartedStore.setState(true)
     }
 
-    if (!isServer && resolvedConfig.devMode) {
-        addRxPlugin(RxDBDevModePlugin)
-    }
-
     // Check if something changed in the config and destroy and recreate the db
-    if (configStore.state && dbStore.state) {
+    if (!isServer && configStore.state && dbStore.state) {
         if (
             configStore.state.name !== resolvedConfig.name ||
             configStore.state.storage !== resolvedConfig.storage ||
@@ -50,13 +46,17 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         }
     }
 
-    if (!dbStore.state) {
+    if (!isServer && !dbStore.state) {
+        if (resolvedConfig.devMode) {
+            addRxPlugin(RxDBDevModePlugin)
+        }
+
         try {
             const db = await createDatabase(resolvedConfig)
             await createCollections(resolvedConfig, db)
             await createReplications(resolvedConfig, db)
         } catch (error) {
-            if (isServer || resolvedConfig.migrationStrategy) throw error
+            if (resolvedConfig.migrationStrategy) throw error
 
             console.error(error)
 

@@ -1,44 +1,16 @@
 import type { RxDatabase, RxReplicationPullStreamItem } from "rxdb"
-import {
-    type RxReplicationState,
-    replicateRxCollection
-} from "rxdb/plugins/replication"
+import { replicateRxCollection } from "rxdb/plugins/replication"
 import { Subject } from "rxjs"
 
 import { pullStreamsStore, replicationStatesStore } from "../stores"
-import {
-    filterTableSchema,
-    type TableKey,
-    type TablesOnly
-} from "../utils/schema-filter"
+import { filterTableSchema, type TableKey } from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
-
-export type PullStreams<TSchema extends Record<string, unknown>> = Record<
-    TableKey<TSchema>,
-    Subject<RxReplicationPullStreamItem<unknown, unknown>>
->
-
-export type ReplicationStates<TSchema extends Record<string, unknown>> = Record<
-    TableKey<TSchema>,
-    RxReplicationState<unknown, unknown>
->
 
 export async function createReplications<
     TSchema extends Record<string, unknown>
 >(config: LofiConfig<TSchema>, db: RxDatabase) {
-    const isServer = typeof window === "undefined"
-
-    if (isServer) {
-        return
-    }
-
-    const sanitizedSchema = filterTableSchema(
-        config.schema
-    ) as TablesOnly<TSchema>
+    const sanitizedSchema = filterTableSchema(config.schema)
     const schemaTableKeys = Object.keys(sanitizedSchema) as TableKey<TSchema>[]
-
-    const pullStreams = {} as PullStreams<TSchema>
-    const replicationStates = {} as ReplicationStates<TSchema>
 
     for (const tableKey of schemaTableKeys) {
         if (!(tableKey in db.collections)) continue
@@ -46,7 +18,6 @@ export async function createReplications<
         const pullStream$ = new Subject<
             RxReplicationPullStreamItem<unknown, unknown>
         >()
-        pullStreams[tableKey] = pullStream$
 
         const replicationState = replicateRxCollection({
             replicationIdentifier: tableKey as string,
@@ -65,20 +36,14 @@ export async function createReplications<
             }
         })
 
-        replicationStates[tableKey] = replicationState
+        replicationStatesStore.setState((prevState) => ({
+            ...prevState,
+            [tableKey]: replicationState
+        }))
+
+        pullStreamsStore.setState((prevState) => ({
+            ...prevState,
+            [tableKey]: pullStream$
+        }))
     }
-
-    pullStreamsStore.setState(
-        pullStreams as Record<
-            string,
-            Subject<RxReplicationPullStreamItem<unknown, unknown>>
-        >
-    )
-
-    replicationStatesStore.setState(
-        replicationStates as Record<
-            string,
-            RxReplicationState<unknown, unknown>
-        >
-    )
 }

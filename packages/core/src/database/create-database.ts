@@ -16,11 +16,10 @@ import type { LofiConfig } from "./lofi-config"
 export async function createDatabase<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
-    const isServer = typeof window === "undefined"
     const { storage, devMode, name } = config
 
     const storageInstance =
-        isServer || storage === "memory"
+        storage === "memory"
             ? getRxStorageMemory()
             : storage === "localstorage"
               ? getRxStorageLocalstorage()
