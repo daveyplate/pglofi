@@ -1,4 +1,9 @@
-import { getQuery, type QueryConfig, tokenStore } from "@pglofi/core"
+import {
+    getQuery,
+    type QueryConfig,
+    type StrictQueryConfig,
+    tokenStore
+} from "@pglofi/core"
 import { QueryClient, QueryObserver } from "@tanstack/query-core"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
@@ -46,7 +51,7 @@ export function syncQuery<
 >(
     schema: TSchema,
     tableKey: TTableKey,
-    config?: TQueryConfig,
+    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
     queryClient?: QueryClient,
     dbURL?: string
 ) {

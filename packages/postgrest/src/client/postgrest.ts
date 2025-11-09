@@ -1,6 +1,6 @@
 import { PostgrestClient } from "@supabase/postgrest-js"
 
-export function getPostgrest(dbURL?: string, token?: string) {
+export function getPostgrest(dbURL?: string, token?: string | null) {
     if (!dbURL) {
         throw new Error("dbURL is not set")
     }
