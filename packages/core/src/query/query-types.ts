@@ -75,49 +75,65 @@ export type IncludeConfig<
 // Strict relation config that ensures no extra properties
 type StrictRelationConfig<
     TSchema extends Record<string, AnyPgTable>,
-    TTableKey extends keyof TSchema,
     T
 > = T extends { table: infer Table }
     ? Table extends keyof TSchema & string
         ? T extends { many: true }
-            ? keyof T extends "table" | "include" | "where" | "limit" | "offset" | "orderBy" | "many" | "on"
-                ? T & (T extends { where: infer W }
-                    ? W extends object
-                        ? { where?: StrictWhereConfig<TSchema[Table], W> }
-                        : {}
-                    : {}) &
-                  (T extends { include: infer I }
-                    ? I extends object
-                        ? { include?: StrictIncludeConfig<TSchema, Table, I> }
-                        : {}
-                    : {})
+            ? keyof T extends
+                  | "table"
+                  | "include"
+                  | "where"
+                  | "limit"
+                  | "offset"
+                  | "orderBy"
+                  | "many"
+                  | "on"
+                ? T &
+                      (T extends { where: infer W }
+                          ? W extends object
+                              ? { where?: StrictWhereConfig<TSchema[Table], W> }
+                              : object
+                          : object) &
+                      (T extends { include: infer I }
+                          ? I extends object
+                              ? { include?: StrictIncludeConfig<TSchema, I> }
+                              : object
+                          : object)
                 : never
-            : keyof T extends "table" | "include" | "where" | "limit" | "offset" | "orderBy" | "many" | "on"
-                ? T & (T extends { where: infer W }
-                    ? W extends object
-                        ? { where?: StrictWhereConfig<TSchema[Table], W> }
-                        : {}
-                    : {}) &
-                  (T extends { include: infer I }
-                    ? I extends object
-                        ? { include?: StrictIncludeConfig<TSchema, Table, I> }
-                        : {}
-                    : {})
-                : never
+            : keyof T extends
+                    | "table"
+                    | "include"
+                    | "where"
+                    | "limit"
+                    | "offset"
+                    | "orderBy"
+                    | "many"
+                    | "on"
+              ? T &
+                    (T extends { where: infer W }
+                        ? W extends object
+                            ? { where?: StrictWhereConfig<TSchema[Table], W> }
+                            : object
+                        : object) &
+                    (T extends { include: infer I }
+                        ? I extends object
+                            ? { include?: StrictIncludeConfig<TSchema, I> }
+                            : object
+                        : object)
+              : never
         : never
     : T extends string
-        ? T extends keyof TSchema & string
-            ? T
-            : never
-        : never
+      ? T extends keyof TSchema & string
+          ? T
+          : never
+      : never
 
 // Strict include config that validates all relations
 export type StrictIncludeConfig<
     TSchema extends Record<string, AnyPgTable>,
-    TTableKey extends keyof TSchema,
     T
 > = {
-    [K in keyof T]: StrictRelationConfig<TSchema, TTableKey, T[K]>
+    [K in keyof T]: StrictRelationConfig<TSchema, T[K]>
 }
 
 // Define the query configuration structure
@@ -145,16 +161,16 @@ export type StrictQueryConfig<
     TTableKey extends keyof TSchema,
     T
 > = NoExcessProperties<T, QueryConfig<TSchema, TTableKey>> &
-    (T extends { where: infer W } 
+    (T extends { where: infer W }
         ? W extends object
             ? { where?: StrictWhereConfig<TSchema[TTableKey], W> }
-            : {}
-        : {}) &
+            : object
+        : object) &
     (T extends { include: infer I }
         ? I extends object
-            ? { include?: StrictIncludeConfig<TSchema, TTableKey, I> }
-            : {}
-        : {})
+            ? { include?: StrictIncludeConfig<TSchema, I> }
+            : object
+        : object)
 
 // Helper type to infer the result type based on the query configuration
 export type InferQueryResult<

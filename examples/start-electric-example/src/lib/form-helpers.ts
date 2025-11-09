@@ -6,4 +6,3 @@ export function handleAction<T extends {}>(
         await action(values)
     }
 }
-
