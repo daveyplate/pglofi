@@ -1,4 +1,3 @@
-import { getTableName } from "drizzle-orm"
 import type { RxDatabase, RxReplicationPullStreamItem } from "rxdb"
 import {
     type RxReplicationState,
@@ -42,20 +41,16 @@ export async function createReplications<
     const replicationStates = {} as ReplicationStates<TSchema>
 
     for (const tableKey of schemaTableKeys) {
-        const schemaTable = sanitizedSchema[tableKey]
-        const tableName = getTableName(schemaTable)
-
-        if (!(tableName in db.collections)) continue
+        if (!(tableKey in db.collections)) continue
 
         const pullStream$ = new Subject<
             RxReplicationPullStreamItem<unknown, unknown>
         >()
         pullStreams[tableKey] = pullStream$
 
-        // Set up replication for each table
         const replicationState = replicateRxCollection({
-            replicationIdentifier: tableName,
-            collection: db[tableName],
+            replicationIdentifier: tableKey as string,
+            collection: db[tableKey],
             autoStart: config.autoStart ?? true,
             pull: {
                 handler: async () => {
@@ -73,7 +68,6 @@ export async function createReplications<
         replicationStates[tableKey] = replicationState
     }
 
-    // Store pullStreams and replicationStates in their respective stores
     pullStreamsStore.setState(
         pullStreams as Record<
             string,

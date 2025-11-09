@@ -1,33 +1,24 @@
 import { type Collection, createCollection } from "@tanstack/db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
-import { getTableName } from "drizzle-orm"
 import type { MigrationStrategies, RxCollectionCreator, RxDatabase } from "rxdb"
 
 import { collectionsStore } from "../stores"
-import {
-    filterTableSchema,
-    type TableKey,
-    type TablesOnly
-} from "../utils/schema-filter"
+import { filterTableSchema, type TableKey } from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
 
 export async function createCollections<
     TSchema extends Record<string, unknown>
 >(config: LofiConfig<TSchema>, db: RxDatabase) {
-    const sanitizedSchema = filterTableSchema(
-        config.schema
-    ) as TablesOnly<TSchema>
+    const sanitizedSchema = filterTableSchema(config.schema)
     const schemaTableKeys = Object.keys(sanitizedSchema) as TableKey<TSchema>[]
     const collections = {} as Record<string, RxCollectionCreator>
 
     schemaTableKeys.forEach((tableKey) => {
         const schemaTable = sanitizedSchema[tableKey]
 
-        const tableName = getTableName(schemaTable)
-
-        collections[tableName] = {
+        const collection = {
             schema: {
-                title: tableName,
+                title: tableKey,
                 version: config.version!,
                 type: "object",
                 primaryKey: "id",
@@ -38,7 +29,7 @@ export async function createCollections<
                 },
                 required: ["id"]
             }
-        }
+        } as RxCollectionCreator
 
         const migrationStrategies: MigrationStrategies = {}
 
@@ -46,7 +37,7 @@ export async function createCollections<
             migrationStrategies[i + 1] = (oldDocumentData, collection) => {
                 if (config.migrationStrategy) {
                     return config.migrationStrategy(
-                        tableName,
+                        tableKey as string,
                         i + 1,
                         oldDocumentData,
                         collection
@@ -57,12 +48,10 @@ export async function createCollections<
             }
         }
 
-        collections[tableName].migrationStrategies = migrationStrategies
+        collection.migrationStrategies = migrationStrategies
 
-        const columns = Object.keys(schemaTable) as (
-            | keyof typeof schemaTable
-            | "id"
-        )[]
+        const columns = Object.keys(schemaTable) as (keyof typeof schemaTable)[]
+
         columns.forEach((column) => {
             if (column === "id") return
 
@@ -80,65 +69,63 @@ export async function createCollections<
                 tableColumn.dataType === "date" ||
                 tableColumn.sqlName === "citext"
             ) {
-                collections[tableName].schema.properties[String(column)] =
-                    isNullable
-                        ? {
-                              anyOf: [
-                                  {
-                                      type: "string"
-                                  },
-                                  { type: "null" }
-                              ]
-                          }
-                        : {
-                              type: "string"
-                          }
+                collection.schema.properties[String(column)] = isNullable
+                    ? {
+                          anyOf: [
+                              {
+                                  type: "string"
+                              },
+                              { type: "null" }
+                          ]
+                      }
+                    : {
+                          type: "string"
+                      }
             } else if (tableColumn.dataType === "json") {
-                collections[tableName].schema.properties[String(column)] =
-                    isNullable
-                        ? {
-                              anyOf: [{ type: "object" }, { type: "null" }]
-                          }
-                        : {
-                              type: "object"
-                          }
+                collection.schema.properties[String(column)] = isNullable
+                    ? {
+                          anyOf: [{ type: "object" }, { type: "null" }]
+                      }
+                    : {
+                          type: "object"
+                      }
             } else {
-                collections[tableName].schema.properties[String(column)] =
-                    isNullable
-                        ? {
-                              anyOf: [
-                                  { type: tableColumn.dataType },
-                                  { type: "null" }
-                              ]
-                          }
-                        : {
-                              type: tableColumn.dataType
-                          }
+                collection.schema.properties[String(column)] = isNullable
+                    ? {
+                          anyOf: [
+                              { type: tableColumn.dataType },
+                              { type: "null" }
+                          ]
+                      }
+                    : {
+                          type: tableColumn.dataType
+                      }
             }
 
             if (tableColumn.notNull) {
-                collections[tableName].schema.required = [
-                    ...collections[tableName].schema.required!,
+                collection.schema.required = [
+                    ...collection.schema.required!,
                     String(column)
                 ]
             }
         })
+
+        collections[tableKey] = collection
     })
 
     await db.addCollections(collections)
 
     for (const tableKey of schemaTableKeys) {
-        const tableName = getTableName(sanitizedSchema[tableKey])
         const tableCollection = createCollection(
             rxdbCollectionOptions({
-                rxCollection: db[tableName],
+                rxCollection: db[tableKey],
                 startSync: true
             })
         ) as Collection
 
         collectionsStore.setState((prevState) => ({
             ...prevState,
-            [tableName]: tableCollection
+            [tableKey]: tableCollection
         }))
     }
 }
