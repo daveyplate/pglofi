@@ -1,23 +1,20 @@
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import type { QueryConfig, StrictQueryConfig } from "../query/query-types"
+import type { QueryConfig } from "../query/query-types"
 
-export type SyncQuery<
-    TSchema extends Record<string, AnyPgTable>,
-    TTableKey extends keyof TSchema,
-    TQueryConfig extends QueryConfig<TSchema, TTableKey>
-> = (
-    schema: TSchema,
-    tableKey: TTableKey,
-    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
-) => () => void
-
-export type LofiPlugin<TSchema extends Record<string, AnyPgTable>> = {
-    sync?: <
-        TTableKey extends keyof TSchema,
-        TQueryConfig extends QueryConfig<TSchema, TTableKey>
-    >(
-        schema: TSchema,
-        tableKey: TTableKey,
-        config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
+export type LofiPlugin = {
+    sync?: (
+        schema: Record<string, AnyPgTable>,
+        tableKey: string,
+        config?: QueryConfig<Record<string, AnyPgTable>, string>
     ) => () => void
+    write?: (
+        schema: Record<string, AnyPgTable>,
+        tableKey: string,
+        operation: "delete" | "insert" | "update",
+        id?: string,
+        values?: Record<string, unknown>
+    ) => Promise<{
+        result?: Record<string, unknown>
+        conflict?: boolean
+    }>
 }

@@ -1,9 +1,4 @@
-import {
-    getQuery,
-    type QueryConfig,
-    type StrictQueryConfig,
-    tokenStore
-} from "@pglofi/core"
+import { getQuery, type QueryConfig, tokenStore } from "@pglofi/core"
 import { QueryClient, QueryObserver } from "@tanstack/query-core"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
@@ -44,14 +39,10 @@ function calculatePageBatches(offset: number, limit: number) {
     return batches
 }
 
-export function syncQuery<
-    TSchema extends Record<string, AnyPgTable>,
-    TTableKey extends keyof TSchema,
-    TQueryConfig extends QueryConfig<TSchema, TTableKey>
->(
-    schema: TSchema,
-    tableKey: TTableKey,
-    config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
+export function sync(
+    schema: Record<string, AnyPgTable>,
+    tableKey: string,
+    config?: QueryConfig<Record<string, AnyPgTable>, string>,
     queryClient?: QueryClient,
     dbURL?: string
 ) {

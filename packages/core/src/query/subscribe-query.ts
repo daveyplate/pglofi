@@ -20,7 +20,7 @@ export function subscribeQuery<
     schema: TSchema,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
-    plugins?: LofiPlugin<TSchema>[]
+    plugins?: LofiPlugin[]
 ) {
     if (!tableKey) return () => {}
 
@@ -84,7 +84,7 @@ export function subscribeQuery<
 
     // Helper function to initialize plugins
     const initializePlugins = () => {
-        if (!plugins) return
+        if (!plugins || typeof tableKey !== "string") return
 
         for (const plugin of plugins) {
             if (plugin.sync) {

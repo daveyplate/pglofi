@@ -18,14 +18,13 @@ function buildIncludeClause<TSchema extends Record<string, AnyPgTable>>(
             : relationConfig
     const fkInfo = getFKInfo(schema, parentTableKey, config)
 
-    // Build nested select string recursively, always including xmin
     const nestedSelectString = config.include
-        ? `*,xmin,${Object.entries(config.include)
+        ? `*,${Object.entries(config.include)
               .map(([name, nestedConfig]) =>
                   buildIncludeClause(schema, config.table, name, nestedConfig)
               )
               .join(",")}`
-        : "*,xmin"
+        : "*"
 
     // PostgREST Format: relationName:tableName!fk_column_name(columns)
     // Note: Filters, order, limit, and offset are applied via query parameters (not in select string)
@@ -34,8 +33,7 @@ function buildIncludeClause<TSchema extends Record<string, AnyPgTable>>(
 
 /**
  * Builds PostgREST select string from query config.
- * Returns "*,xmin" for simple queries, or "*,xmin,includes..." for queries with relations.
- * Always includes xmin for optimistic locking and version control.
+ * Returns "*" for simple queries, or "*,...includes..." for queries with relations.
  */
 export function buildSelectString<
     TSchema extends Record<string, AnyPgTable>,
@@ -45,11 +43,11 @@ export function buildSelectString<
     tableKey: TTableKey,
     query?: QueryConfig<TSchema, TTableKey>
 ): string {
-    if (!query?.include) return "*,xmin"
+    if (!query?.include) return "*"
 
     const includes = Object.entries(query.include).map(([name, config]) =>
         buildIncludeClause(schema, tableKey, name, config)
     )
 
-    return `*,xmin,${includes.join(",")}`
+    return `*,${includes.join(",")}`
 }

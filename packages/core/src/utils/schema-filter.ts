@@ -11,7 +11,7 @@ export type TablesOnly<TSchema> = {
     >
 }
 
-export type TableKey<TSchema extends Record<string, unknown>> =
+export type TableKey<TSchema extends Record<string, unknown>> = string &
     keyof TablesOnly<TSchema>
 
 export type SchemaCollection<TSchema extends Record<string, unknown>> = {

@@ -1,6 +1,5 @@
 import type { RxCollection, RxStorage } from "rxdb"
 import type { LofiPlugin } from "../plugin/lofi-plugin"
-import type { TablesOnly } from "../utils/schema-filter"
 
 export type LofiConfig<TSchema extends Record<string, unknown>> = {
     name?: string
@@ -9,7 +8,7 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
     autoStart?: boolean
     storage?: "localstorage" | "memory" | "dexie" | RxStorage<unknown, unknown>
     version?: number
-    plugins?: LofiPlugin<TablesOnly<TSchema>>[]
+    plugins?: LofiPlugin[]
     migrationStrategy?: (
         table: string,
         version: number,

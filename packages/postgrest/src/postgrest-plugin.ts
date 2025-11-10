@@ -1,11 +1,7 @@
-import {
-    getEnvVar,
-    type QueryConfig,
-    type StrictQueryConfig
-} from "@pglofi/core"
+import { getEnvVar, type LofiPlugin } from "@pglofi/core"
 import type { QueryClient } from "@tanstack/query-core"
-import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { syncQuery } from "./sync/sync-query"
+import { sync } from "./plugin/sync"
+import { write } from "./plugin/write"
 
 type PostgrestPluginOptions = {
     dbURL?: string
@@ -20,14 +16,9 @@ export function postgrestPlugin(options?: PostgrestPluginOptions) {
         getEnvVar("VITE_NEON_DATA_API_URL")
 
     return {
-        sync: <
-            TSchema extends Record<string, AnyPgTable>,
-            TTableKey extends keyof TSchema,
-            TQueryConfig extends QueryConfig<TSchema, TTableKey>
-        >(
-            schema: TSchema,
-            tableKey: TTableKey,
-            config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
-        ) => syncQuery(schema, tableKey, config, options?.queryClient, dbURL)
-    }
+        sync: (schema, tableKey, config) =>
+            sync(schema, tableKey, config, options?.queryClient, dbURL),
+        write: (schema, tableKey, operation, id, values) =>
+            write(schema, tableKey, operation, id, values, dbURL)
+    } as LofiPlugin
 }
