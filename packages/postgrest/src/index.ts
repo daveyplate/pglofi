@@ -1,1 +1,1 @@
-export * from "./sync/sync-plugin"
+export * from "./postgrest-plugin"
