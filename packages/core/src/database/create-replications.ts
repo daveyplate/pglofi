@@ -40,7 +40,7 @@ export async function createReplications<
                         throw new Error("No write plugin found")
                     }
 
-                    const conflicts = [] as unknown[]
+                    const conflicts = []
 
                     for (const changeRow of changeRows) {
                         if (changeRow.newDocumentState._deleted) {
