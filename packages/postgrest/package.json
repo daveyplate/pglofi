@@ -24,12 +24,12 @@
     "author": "daveycodez",
     "license": "MIT",
     "devDependencies": {
-        "@supabase/postgrest-js": "^2.79.0",
-        "@tanstack/query-core": "^5.90.6",
-        "@types/node": "^24.10.0",
+        "@supabase/postgrest-js": "^2.81.1",
+        "@tanstack/query-core": "^5.90.7",
+        "@types/node": "^24.10.1",
         "drizzle-orm": "^0.44.7",
         "typescript": "^5.9.3",
-        "vite": "^7.1.12",
+        "vite": "^7.2.2",
         "vite-plugin-dts": "^4.5.4"
     },
     "peerDependencies": {
