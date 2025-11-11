@@ -20,9 +20,9 @@ export async function createReplications<
         >()
 
         const replicationState = replicateRxCollection({
-            replicationIdentifier: tableKey as string,
+            replicationIdentifier: tableKey,
+            waitForLeadership: true,
             collection: db[tableKey],
-            autoStart: config.autoStart ?? true,
             pull: {
                 handler: async () => {
                     return { checkpoint: {}, documents: [] }

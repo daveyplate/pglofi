@@ -2,7 +2,7 @@ import { createCollection, liveQueryCollectionOptions } from "@tanstack/db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
 import type { LofiPlugin } from "../plugin/lofi-plugin"
-import { syncStartedStore } from "../stores"
+import { dbStore } from "../stores"
 import { createQuery } from "./create-query"
 import { pushToPullStreams } from "./pullstream-helpers"
 import { buildQuery, flatToHierarchical } from "./query-builder"
@@ -14,7 +14,7 @@ import type {
 
 export function subscribeQuery<
     TSchema extends Record<string, AnyPgTable>,
-    TTableKey extends keyof TSchema,
+    TTableKey extends keyof TSchema & string,
     TQueryConfig extends QueryConfig<TSchema, TTableKey>
 >(
     schema: TSchema,
@@ -94,24 +94,19 @@ export function subscribeQuery<
         }
     }
 
-    // Subscribe to syncStartedStore and initialize plugins when sync starts
-    let syncStartedUnsubscribe: (() => void) | undefined
+    let dbUnsubscribe: (() => void) | undefined
     if (plugins) {
         // Check if sync has already started
-        if (syncStartedStore.state) {
+        if (dbStore.state) {
             initializePlugins()
         } else {
             // Subscribe and wait for sync to start
-            syncStartedUnsubscribe = syncStartedStore.subscribe(
-                ({ currentVal }) => {
-                    if (currentVal) {
-                        initializePlugins()
-                        // Unsubscribe after initialization since we only need to run once
-                        syncStartedUnsubscribe?.()
-                        syncStartedUnsubscribe = undefined
-                    }
+            dbUnsubscribe = dbStore.subscribe(({ currentVal }) => {
+                if (currentVal) {
+                    initializePlugins()
+                    dbUnsubscribe?.()
                 }
-            )
+            })
         }
     }
 
@@ -119,10 +114,7 @@ export function subscribeQuery<
         subscription.unsubscribe()
         remoteDataUnsubscribe()
         queryCollection.cleanup()
-
-        if (syncStartedUnsubscribe) {
-            syncStartedUnsubscribe()
-        }
+        dbUnsubscribe?.()
 
         for (const cleanup of pluginCleanups) {
             cleanup()

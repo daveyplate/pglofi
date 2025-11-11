@@ -1,6 +1,8 @@
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
-import { pullStreamsStore } from "../stores"
+
+import { dbStore, pullStreamsStore } from "../stores"
+import type { TableKey } from "../utils/schema-filter"
 import type { AnyRelationConfig, QueryConfig } from "./query-types"
 
 /**
@@ -68,7 +70,7 @@ function extractRelatedDocs<TSchema extends Record<string, AnyPgTable>>(
  */
 export function pushToPullStreams<
     TSchema extends Record<string, AnyPgTable>,
-    TTableKey extends keyof TSchema
+    TTableKey extends keyof TSchema & string
 >(
     schema: TSchema,
     tableKey: TTableKey,
@@ -78,12 +80,8 @@ export function pushToPullStreams<
 ): void {
     if (data.length === 0) return
 
-    const pullStreams = pullStreamsStore.state
-    const pullStream = pullStreams[tableKey as string]
-
-    if (!pullStream) {
-        return
-    }
+    const pullStream = pullStreamsStore.state?.[tableKey]
+    if (!pullStream) return
 
     // Collect related documents by table name for batching
     const relatedDocsByTable = new Map<
@@ -125,7 +123,7 @@ export function pushToPullStreams<
     })
 
     // Push cleaned parent data to its pullStream
-    pullStream.next({
+    sendToPullStream(tableKey, {
         checkpoint: {},
         documents
     })
@@ -135,10 +133,36 @@ export function pushToPullStreams<
         // Find the tableKey for the related table name
         const relatedTableKey = Object.keys(schema).find(
             (key) => getTableName(schema[key]) === relatedTableName
-        ) as keyof TSchema | undefined
+        ) as TableKey<TSchema> | undefined
 
         if (relatedTableKey) {
             pushToPullStreams(schema, relatedTableKey, docs, config)
         }
+    }
+}
+
+export const sendToPullStream = async (
+    tableKey: string,
+    {
+        checkpoint,
+        documents
+    }: { checkpoint: unknown; documents: Record<string, unknown>[] }
+) => {
+    const db = dbStore.state
+    if (!db) throw new Error("Database not initialized")
+
+    if (db.isLeader()) {
+        pullStreamsStore.state[tableKey].next({
+            checkpoint,
+            documents: documents.map((doc) => ({ _deleted: false, ...doc }))
+        })
+    } else {
+        db.leaderElector().broadcastChannel.postMessage({
+            type: "pull-stream",
+            payload: {
+                tableKey,
+                value: { checkpoint, documents }
+            }
+        })
     }
 }

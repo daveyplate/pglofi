@@ -11,13 +11,7 @@ import { deleteEntity, insertEntity, updateEntity } from "./mutators/mutators"
 import { createQuery } from "./query/create-query"
 import type { QueryConfig, StrictQueryConfig } from "./query/query-types"
 import { subscribeQuery } from "./query/subscribe-query"
-import {
-    configStore,
-    dbStore,
-    replicationStatesStore,
-    syncStartedStore,
-    tokenStore
-} from "./stores"
+import { configStore, dbStore, syncStartedStore, tokenStore } from "./stores"
 import {
     filterTableSchema,
     type TableKey,
@@ -31,25 +25,31 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     const resolvedConfig = receiveConfig(config)
     const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
 
+    if (resolvedConfig.token) {
+        tokenStore.setState(resolvedConfig.token)
+    }
+
     if (resolvedConfig.autoStart) {
         syncStartedStore.setState(true)
     }
 
-    // Check if something changed in the config and destroy and recreate the db
-    if (!isServer && configStore.state && dbStore.state) {
-        if (
-            configStore.state.name !== resolvedConfig.name ||
-            configStore.state.storage !== resolvedConfig.storage ||
-            !isEqual(configStore.state.schema, config.schema)
-        ) {
-            await destroyDatabase()
-        }
-    }
-
-    if (!isServer && !dbStore.state) {
+    const start = async () => {
         if (resolvedConfig.devMode) {
             addRxPlugin(RxDBDevModePlugin)
         }
+
+        // Check if something changed in the config and destroy and recreate the db
+        if (configStore.state && dbStore.state) {
+            if (
+                configStore.state.name !== resolvedConfig.name ||
+                configStore.state.storage !== resolvedConfig.storage ||
+                !isEqual(configStore.state.schema, config.schema)
+            ) {
+                await destroyDatabase()
+            }
+        }
+
+        if (dbStore.state) return
 
         try {
             const db = await createDatabase(resolvedConfig)
@@ -72,13 +72,13 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         }
     }
 
+    if (!isServer) {
+        start()
+    }
+
     configStore.setState(resolvedConfig)
 
     const startSync = async () => {
-        for (const tableKey in replicationStatesStore.state) {
-            await replicationStatesStore.state[tableKey].start()
-        }
-
         syncStartedStore.setState(true)
     }
 

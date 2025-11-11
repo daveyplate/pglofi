@@ -9,6 +9,7 @@ export type LofiConfig<TSchema extends Record<string, unknown>> = {
     storage?: "localstorage" | "memory" | "dexie" | RxStorage<unknown, unknown>
     version?: number
     plugins?: LofiPlugin[]
+    token?: string
     migrationStrategy?: (
         table: string,
         version: number,

@@ -4,7 +4,7 @@ import * as schema from "@/database/schema"
 
 export const lofi = await createLofi({
     schema: schema,
-    storage: "memory",
+    storage: "localstorage",
     autoStart: false,
     plugins: [postgrestPlugin()]
 })

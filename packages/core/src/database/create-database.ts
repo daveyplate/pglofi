@@ -1,4 +1,9 @@
+import { addRxPlugin } from "rxdb"
 import { createRxDatabase, removeRxDatabase } from "rxdb/plugins/core"
+import {
+    getLeaderElectorByBroadcastChannel,
+    RxDBLeaderElectionPlugin
+} from "rxdb/plugins/leader-election"
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie"
 import { getRxStorageLocalstorage } from "rxdb/plugins/storage-localstorage"
 import { getRxStorageMemory } from "rxdb/plugins/storage-memory"
@@ -18,6 +23,8 @@ export async function createDatabase<TSchema extends Record<string, unknown>>(
 ) {
     const { storage, devMode, name } = config
 
+    addRxPlugin(RxDBLeaderElectionPlugin)
+
     const storageInstance =
         storage === "memory"
             ? getRxStorageMemory()
@@ -30,11 +37,31 @@ export async function createDatabase<TSchema extends Record<string, unknown>>(
     const db = await createRxDatabase({
         name: name!,
         closeDuplicates: true,
+        multiInstance: storage !== "memory",
         storage: devMode
             ? wrappedValidateAjvStorage({
                   storage: storageInstance
               })
             : storageInstance
+    })
+
+    const leaderElector = getLeaderElectorByBroadcastChannel(
+        db.leaderElector().broadcastChannel
+    )
+
+    leaderElector.onduplicate = async () => {
+        // Duplicate leader detected -> reload the page.
+        location.reload()
+    }
+
+    db.waitForLeadership().then(() => {
+        db.leaderElector().broadcastChannel.onmessage = (event) => {
+            if (event.type === "pull-stream") {
+                pullStreamsStore.state[event.payload.tableKey]?.next(
+                    event.payload.value
+                )
+            }
+        }
     })
 
     dbStore.setState(db)

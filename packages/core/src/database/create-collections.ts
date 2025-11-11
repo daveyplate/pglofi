@@ -37,7 +37,7 @@ export async function createCollections<
             migrationStrategies[i + 1] = (oldDocumentData, collection) => {
                 if (config.migrationStrategy) {
                     return config.migrationStrategy(
-                        tableKey as string,
+                        tableKey,
                         i + 1,
                         oldDocumentData,
                         collection
