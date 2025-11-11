@@ -17,16 +17,12 @@ export function useQuery<
     schema: TSchema,
     tableKey?: TTableKey | null | 0 | false | "",
     config?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>,
-    subscribeQuery?: <
-        TTableKeyInner extends keyof TSchema,
-        TQueryConfigInner extends QueryConfig<TSchema, TTableKeyInner>
-    >(
-        tableKey?: TTableKeyInner | null | 0 | false | "",
-        query?: StrictQueryConfig<TSchema, TTableKeyInner, TQueryConfigInner>
+    subscribeQuery?: (
+        tableKey?: TTableKey | null | 0 | false | "",
+        query?: StrictQueryConfig<TSchema, TTableKey, TQueryConfig>
     ) => () => void
 ) {
     const hydrated = useHydrated()
-
     const queryStore = createQuery(schema, hydrated ? tableKey : null, config)
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: schema and collections are stable

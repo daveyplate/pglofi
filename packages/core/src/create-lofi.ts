@@ -18,10 +18,11 @@ import {
     type TablesOnly
 } from "./utils/schema-filter"
 
+const isServer = typeof window === "undefined"
+
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
-    const isServer = typeof window === "undefined"
     const resolvedConfig = receiveConfig(config)
     const sanitizedSchema = filterTableSchema(resolvedConfig.schema)
 
