@@ -159,16 +159,25 @@ type NoExcessProperties<T, U> = T extends U
 type OmitWhere<T> = Omit<T, "where">
 
 // Strict version that enforces exact QueryConfig shape
+// Note: We preserve the original T's structure so InferQueryResult can extract include/limit/etc
 export type StrictQueryConfig<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
     T
-> = NoExcessProperties<OmitWhere<T>, OmitWhere<QueryConfig<TSchema, TTableKey>>> &
+> = T & // Start with T to preserve all properties for InferQueryResult
+    NoExcessProperties<OmitWhere<T>, OmitWhere<QueryConfig<TSchema, TTableKey>>> &
     (T extends { include: infer I }
         ? I extends object
-            ? { include?: StrictIncludeConfig<TSchema, I> }
-            : object
-        : object) & {
+            ? { include: StrictIncludeConfig<TSchema, I> }
+            : {}
+        : {}) &
+    (T extends { limit: infer L } ? (L extends number ? { limit: L } : {}) : {}) &
+    (T extends { offset: infer O } ? (O extends number ? { offset: O } : {}) : {}) &
+    (T extends { orderBy: infer OB }
+        ? OB extends OrderByConfig<TSchema[TTableKey]>
+            ? { orderBy: OB }
+            : {}
+        : {}) & {
         where?: WhereConfig<TSchema[TTableKey]>
     }
 
