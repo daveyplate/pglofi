@@ -155,22 +155,22 @@ type NoExcessProperties<T, U> = T extends U
         : never
     : never
 
+// Helper type to exclude where from strict checking
+type OmitWhere<T> = Omit<T, "where">
+
 // Strict version that enforces exact QueryConfig shape
 export type StrictQueryConfig<
     TSchema extends Record<string, AnyPgTable>,
     TTableKey extends keyof TSchema,
     T
-> = NoExcessProperties<T, QueryConfig<TSchema, TTableKey>> &
-    (T extends { where: infer W }
-        ? W extends object
-            ? { where?: StrictWhereConfig<TSchema[TTableKey], W> }
-            : object
-        : object) &
+> = NoExcessProperties<OmitWhere<T>, OmitWhere<QueryConfig<TSchema, TTableKey>>> &
     (T extends { include: infer I }
         ? I extends object
             ? { include?: StrictIncludeConfig<TSchema, I> }
             : object
-        : object)
+        : object) & {
+        where?: WhereConfig<TSchema[TTableKey]>
+    }
 
 // Helper type to infer the result type based on the query configuration
 export type InferQueryResult<
