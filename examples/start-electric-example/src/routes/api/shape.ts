@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/shape")({
 
                 // Construct the upstream URL
                 const originUrl = new URL(
-                    `https://api.electric-sql.cloud/v1/shape`
+                    `https://electric-t0oh.onrender.com/v1/shape`
                 )
 
                 // console.log(ELECTRIC_PROTOCOL_QUERY_PARAMS)

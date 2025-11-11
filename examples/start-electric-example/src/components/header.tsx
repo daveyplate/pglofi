@@ -1,12 +1,29 @@
 import { GitHubIcon, UserButton } from "@daveyplate/better-auth-ui"
+import { Shape, ShapeStream } from "@electric-sql/client"
 import { Link } from "@tanstack/react-router"
-import { lofi } from "@/lib/lofi"
+import { useEffect } from "react"
 import { ModeToggle } from "./mode-toggle"
 import { Button } from "./ui/button"
 import { Separator } from "./ui/separator"
 
 export function Header() {
-    lofi.useQuery("profiles")
+    useEffect(() => {
+        const stream = new ShapeStream({
+            url: "http://localhost:3000/api/shape",
+            params: {
+                table: "todos"
+            }
+        })
+
+        const shape = new Shape(stream)
+        const unsubscribe = shape.subscribe((data) => {
+            console.log(data)
+        })
+
+        return () => {
+            unsubscribe()
+        }
+    })
 
     return (
         <header className="sticky top-0 z-50 flex h-12 justify-between border-b bg-background/60 px-safe-or-4 backdrop-blur md:h-14 md:px-safe-or-6">
