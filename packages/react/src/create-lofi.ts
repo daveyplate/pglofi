@@ -10,6 +10,7 @@ import {
 } from "@pglofi/core"
 import { useStore } from "@tanstack/react-store"
 import { useQuery } from "./hooks/use-query"
+import { useQueryOne } from "./hooks/use-query-one"
 
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
@@ -30,6 +31,17 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
                 TQueryConfig
             >
         ) => useQuery(sanitizedSchema, tableKey, query, lofi.subscribeQuery),
+        useQueryOne: <
+            TTableKey extends TableKey<TSchema>,
+            TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>
+        >(
+            tableKey?: TTableKey | null | 0 | false | "",
+            query?: StrictQueryConfig<
+                TablesOnly<TSchema>,
+                TTableKey,
+                TQueryConfig
+            >
+        ) => useQueryOne(sanitizedSchema, tableKey, query, lofi.subscribeQuery),
         useToken: () => useStore(tokenStore)
     }
 }
