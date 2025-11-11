@@ -2,7 +2,6 @@ import type { InferInsertModel } from "drizzle-orm"
 import { isEqual } from "lodash-es"
 import { addRxPlugin } from "rxdb/plugins/core"
 import { RxDBDevModePlugin } from "rxdb/plugins/dev-mode"
-
 import { createCollections } from "./database/create-collections"
 import { createDatabase, destroyDatabase } from "./database/create-database"
 import { createReplications } from "./database/create-replications"
@@ -11,7 +10,7 @@ import { deleteEntity, insertEntity, updateEntity } from "./mutators/mutators"
 import { createQuery } from "./query/create-query"
 import type { QueryConfig, StrictQueryConfig } from "./query/query-types"
 import { subscribeQuery } from "./query/subscribe-query"
-import { configStore, dbStore, syncStartedStore, tokenStore } from "./stores"
+import { configStore, dbStore, tokenStore } from "./stores"
 import {
     filterTableSchema,
     type TableKey,
@@ -30,21 +29,17 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
         tokenStore.setState(resolvedConfig.token)
     }
 
-    if (resolvedConfig.autoStart) {
-        syncStartedStore.setState(true)
-    }
-
     const start = async () => {
         if (resolvedConfig.devMode) {
             addRxPlugin(RxDBDevModePlugin)
         }
 
         // Check if something changed in the config and destroy and recreate the db
-        if (configStore.state && dbStore.state) {
+        if (dbStore.state) {
             if (
-                configStore.state.name !== resolvedConfig.name ||
-                configStore.state.storage !== resolvedConfig.storage ||
-                !isEqual(configStore.state.schema, config.schema)
+                configStore.state?.name !== resolvedConfig.name ||
+                configStore.state?.storage !== resolvedConfig.storage ||
+                !isEqual(configStore.state?.schema, config.schema)
             ) {
                 await destroyDatabase()
             }
@@ -56,6 +51,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
             const db = await createDatabase(resolvedConfig)
             await createCollections(resolvedConfig, db)
             await createReplications(resolvedConfig, db)
+
+            dbStore.setState(db)
         } catch (error) {
             if (resolvedConfig.migrationStrategy) throw error
 
@@ -70,26 +67,24 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 
             await createCollections(resolvedConfig, db)
             await createReplications(resolvedConfig, db)
+
+            dbStore.setState(db)
         }
     }
 
-    if (!isServer) {
+    if (!isServer && (resolvedConfig.autoStart || dbStore.state)) {
         start()
     }
 
     configStore.setState(resolvedConfig)
 
-    const startSync = async () => {
-        syncStartedStore.setState(true)
-    }
-
     return {
         setToken: (token?: string | null) => {
             tokenStore.setState(token)
 
-            if (token) startSync()
+            if (token) start()
         },
-        startSync,
+        start,
         createQuery: <
             TTableKey extends TableKey<TSchema>,
             TQueryConfig extends QueryConfig<TablesOnly<TSchema>, TTableKey>

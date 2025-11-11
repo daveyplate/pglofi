@@ -2,6 +2,7 @@ import { createCollection, liveQueryCollectionOptions } from "@tanstack/db"
 import { type AnyUpdater, Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { dbStore } from "../stores"
 import { buildQuery, flatToHierarchical } from "./query-builder"
 import type {
     InferQueryResult,
@@ -66,7 +67,7 @@ export function createQuery<
 
     let data: TQueryResult = []
 
-    if (tableKey) {
+    if (tableKey && dbStore.state) {
         const query = buildQuery(schema, tableKey, config)
         const queryCollection = createCollection(
             liveQueryCollectionOptions({

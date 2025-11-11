@@ -14,8 +14,6 @@ export const configStore = new Store<
 
 export const tokenStore = new Store<string | undefined | null>(undefined)
 
-export const syncStartedStore = new Store(false)
-
 export const collectionsStore: Store<Record<string, Collection>> = new Store({})
 
 export const replicationStatesStore: Store<

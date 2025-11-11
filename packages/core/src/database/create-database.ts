@@ -1,5 +1,5 @@
 import { addRxPlugin } from "rxdb"
-import { createRxDatabase, removeRxDatabase } from "rxdb/plugins/core"
+import { createRxDatabase } from "rxdb/plugins/core"
 import {
     getLeaderElectorByBroadcastChannel,
     RxDBLeaderElectionPlugin
@@ -11,7 +11,6 @@ import { wrappedValidateAjvStorage } from "rxdb/plugins/validate-ajv"
 
 import {
     collectionsStore,
-    configStore,
     dbStore,
     pullStreamsStore,
     replicationStatesStore
@@ -64,13 +63,11 @@ export async function createDatabase<TSchema extends Record<string, unknown>>(
         }
     })
 
-    dbStore.setState(db)
-
     return db
 }
 
 export const destroyDatabase = async () => {
-    await removeRxDatabase(configStore.state!.name!, dbStore.state!.storage)
+    await dbStore.state?.remove()
     dbStore.setState(undefined)
     collectionsStore.setState({})
     pullStreamsStore.setState({})

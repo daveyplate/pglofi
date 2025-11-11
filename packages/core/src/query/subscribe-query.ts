@@ -24,100 +24,106 @@ export function subscribeQuery<
 ) {
     if (!tableKey) return () => {}
 
-    const queryStore = createQuery(schema, tableKey, config)
-    const tableName = getTableName(schema[tableKey])
+    let cleanupFn: (() => void) | undefined
+    let dbUnsubscribe: (() => void) | undefined
 
-    // Build the query
-    const query = buildQuery(schema, tableKey, config)
+    const setupQuery = () => {
+        if (!dbStore.state) return
 
-    // Create the query collection
-    const queryCollection = createCollection(
-        liveQueryCollectionOptions({
-            query,
-            startSync: true
-        })
-    )
+        const queryStore = createQuery(schema, tableKey, config)
+        const tableName = getTableName(schema[tableKey])
 
-    // Helper function to update the store with collection data
-    const updateStore = () => {
-        // Get the raw data from the collection
-        const rawData = queryCollection.toArray
+        // Build the query
+        const query = buildQuery(schema, tableKey, config)
 
-        // Transform flat joined results into hierarchical structure
-        const hierarchicalData = flatToHierarchical(
-            schema,
-            rawData,
-            tableKey,
-            tableName!,
-            config
+        // Create the query collection
+        const queryCollection = createCollection(
+            liveQueryCollectionOptions({
+                query,
+                startSync: true
+            })
         )
 
-        // Update the store with the new data
-        queryStore.setState((prev) => ({
-            ...prev,
-            isPending: prev.isPending && !hierarchicalData.length,
-            data: hierarchicalData as InferQueryResult<
-                TSchema,
-                TTableKey,
-                TQueryConfig
-            >[]
-        }))
-    }
+        // Helper function to update the store with collection data
+        const updateStore = () => {
+            // Get the raw data from the collection
+            const rawData = queryCollection.toArray
 
-    queryCollection.onFirstReady(updateStore)
-    const subscription = queryCollection.subscribeChanges(updateStore)
+            // Transform flat joined results into hierarchical structure
+            const hierarchicalData = flatToHierarchical(
+                schema,
+                rawData,
+                tableKey,
+                tableName!,
+                config
+            )
 
-    queryCollection.startSyncImmediate()
-
-    // Watch for changes to remoteData and push to pullStreams
-    const remoteDataUnsubscribe = queryStore.subscribe(
-        ({ prevVal, currentVal: { remoteData } }) => {
-            if (prevVal.remoteData === remoteData) return
-            if (!remoteData?.length) return
-
-            // Push to pullStreams with includes handling
-            pushToPullStreams(schema, tableKey, remoteData, config)
+            // Update the store with the new data
+            queryStore.setState((prev) => ({
+                ...prev,
+                isPending: prev.isPending && !hierarchicalData.length,
+                data: hierarchicalData as InferQueryResult<
+                    TSchema,
+                    TTableKey,
+                    TQueryConfig
+                >[]
+            }))
         }
-    )
 
-    const pluginCleanups: Array<() => void> = []
+        queryCollection.onFirstReady(updateStore)
+        const subscription = queryCollection.subscribeChanges(updateStore)
 
-    // Helper function to initialize plugins
-    const initializePlugins = () => {
-        if (!plugins || typeof tableKey !== "string") return
+        queryCollection.startSyncImmediate()
 
-        for (const plugin of plugins) {
-            if (plugin.sync) {
-                const cleanup = plugin.sync(schema, tableKey, config)
-                pluginCleanups.push(cleanup)
+        // Watch for changes to remoteData and push to pullStreams
+        const remoteDataUnsubscribe = queryStore.subscribe(
+            ({ prevVal, currentVal: { remoteData } }) => {
+                if (prevVal.remoteData === remoteData) return
+                if (!remoteData?.length) return
+
+                // Push to pullStreams with includes handling
+                pushToPullStreams(schema, tableKey, remoteData, config)
+            }
+        )
+
+        const pluginCleanups: Array<() => void> = []
+
+        // Initialize plugins
+        if (plugins && typeof tableKey === "string") {
+            for (const plugin of plugins) {
+                if (plugin.sync) {
+                    const cleanup = plugin.sync(schema, tableKey, config)
+                    pluginCleanups.push(cleanup)
+                }
+            }
+        }
+
+        cleanupFn = () => {
+            subscription.unsubscribe()
+            remoteDataUnsubscribe()
+            queryCollection.cleanup()
+
+            for (const cleanup of pluginCleanups) {
+                cleanup()
             }
         }
     }
 
-    let dbUnsubscribe: (() => void) | undefined
-    if (plugins) {
-        // Check if sync has already started
-        if (dbStore.state) {
-            initializePlugins()
-        } else {
-            // Subscribe and wait for sync to start
-            dbUnsubscribe = dbStore.subscribe(({ currentVal }) => {
-                if (currentVal) {
-                    initializePlugins()
-                    dbUnsubscribe?.()
-                }
-            })
-        }
+    // Check if dbStore.state is already available
+    if (dbStore.state) {
+        setupQuery()
+    } else {
+        // Subscribe and wait for dbStore.state to become available
+        dbUnsubscribe = dbStore.subscribe(({ currentVal }) => {
+            if (currentVal) {
+                setupQuery()
+                dbUnsubscribe?.()
+            }
+        })
     }
 
     return () => {
-        subscription.unsubscribe()
-        remoteDataUnsubscribe()
-        queryCollection.cleanup()
+        cleanupFn?.()
         dbUnsubscribe?.()
-
-        for (const cleanup of pluginCleanups) {
-            cleanup()
-        }
     }
 }
