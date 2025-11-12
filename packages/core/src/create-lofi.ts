@@ -19,6 +19,8 @@ import {
 
 const isServer = typeof window === "undefined"
 
+let isCreatingDatabase = false
+
 export async function createLofi<TSchema extends Record<string, unknown>>(
     config: LofiConfig<TSchema>
 ) {
@@ -30,6 +32,10 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
     }
 
     const start = async () => {
+        if (isCreatingDatabase) return
+
+        isCreatingDatabase = true
+
         if (resolvedConfig.devMode) {
             addRxPlugin(RxDBDevModePlugin)
         }
@@ -49,6 +55,7 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 
         try {
             const db = await createDatabase(resolvedConfig)
+
             await createCollections(resolvedConfig, db)
             await createReplications(resolvedConfig, db)
 
@@ -70,6 +77,8 @@ export async function createLofi<TSchema extends Record<string, unknown>>(
 
             dbStore.setState(db)
         }
+
+        isCreatingDatabase = false
     }
 
     if (!isServer && (resolvedConfig.autoStart || dbStore.state)) {

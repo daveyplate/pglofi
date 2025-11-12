@@ -153,5 +153,22 @@ export async function createReplications<
             ...prevState,
             [tableKey]: pullStream$
         }))
+
+        await Promise.all(
+            Object.values(replicationStatesStore.state).map(
+                (replicationState) =>
+                    new Promise<void>((resolve) => {
+                        const checkStarted = () => {
+                            if (replicationState.wasStarted || !db.isLeader()) {
+                                resolve()
+                            } else {
+                                requestAnimationFrame(checkStarted)
+                            }
+                        }
+
+                        checkStarted()
+                    })
+            )
+        )
     }
 }

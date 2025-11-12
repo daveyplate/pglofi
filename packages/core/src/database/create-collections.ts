@@ -1,7 +1,6 @@
 import { type Collection, createCollection } from "@tanstack/db"
 import { rxdbCollectionOptions } from "@tanstack/rxdb-db-collection"
 import type { MigrationStrategies, RxCollectionCreator, RxDatabase } from "rxdb"
-
 import { collectionsStore } from "../stores"
 import { filterTableSchema, type TableKey } from "../utils/schema-filter"
 import type { LofiConfig } from "./lofi-config"
