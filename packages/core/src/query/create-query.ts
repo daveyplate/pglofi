@@ -13,7 +13,9 @@ import type {
 export type QueryResult<TData = unknown[]> = {
     isPending: boolean
     data: TData
+    fullData: TData | null
     remoteData: TData | null
+    fullRemoteData: TData | null
     error: Error | null
     refetch?: () => void
 }
@@ -66,6 +68,7 @@ export function createQuery<
     }
 
     let data: TQueryResult = []
+    let fullData: TQueryResult = []
 
     if (tableKey && dbStore.state) {
         const query = buildQuery(schema, tableKey, config)
@@ -89,13 +92,47 @@ export function createQuery<
 
         data = hierarchicalData as TQueryResult
 
+        // If offset > 0, also create a collection for fullData (all pages up to current page)
+        if (config?.offset) {
+            const fullDataConfig = {
+                ...config,
+                offset: 0,
+                limit: config.offset + (config?.limit ?? 0)
+            }
+
+            const fullDataQuery = buildQuery(schema, tableKey, fullDataConfig)
+            const fullDataCollection = createCollection(
+                liveQueryCollectionOptions({
+                    query: fullDataQuery,
+                    startSync: true
+                })
+            )
+
+            const fullDataRaw = fullDataCollection.toArray
+            const fullDataHierarchical = flatToHierarchical(
+                schema,
+                fullDataRaw,
+                tableKey,
+                tableName!,
+                fullDataConfig
+            )
+
+            fullData = fullDataHierarchical as TQueryResult
+
+            fullDataCollection.cleanup()
+        } else {
+            fullData = data
+        }
+
         queryCollection.cleanup()
     }
 
     const store = new Store<QueryResult<TQueryResult>>({
         isPending: data.length === 0,
         data,
+        fullData,
         remoteData: null,
+        fullRemoteData: null,
         error: null
     })
 

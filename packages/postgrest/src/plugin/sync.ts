@@ -70,19 +70,21 @@ export function sync(
         config ? JSON.stringify(config) : undefined
     ].filter(Boolean)
 
+    // Store fullRemoteData in closure to access it in subscribe callback
+    let fullRemoteData: unknown[] | null = null
+
     const observer = new QueryObserver(client, {
         queryKey,
         queryFn: async () => {
+            if (!dbURL) throw new Error("dbURL is required")
+
             const postgrest = getPostgrest(dbURL, tokenStore.state)
 
+            let transformedData = []
+
             // Determine if we need to fetch multiple pages
-            const offset = config?.offset ?? 0
-            const limit = config?.limit ?? MAX_PAGE_SIZE
-
-            let transformedData: unknown[]
-
             // If offset is 0 or undefined, just fetch normally
-            if (offset === 0) {
+            if (!config?.offset) {
                 let queryBuilder = postgrest
                     .from(tableName)
                     .select(selectString)
@@ -102,9 +104,15 @@ export function sync(
                     data as unknown as Record<string, unknown>[],
                     config?.include
                 )
+
+                // When offset is 0, fullRemoteData is the same as remoteData
+                fullRemoteData = transformedData
             } else {
                 // Calculate all page batches to fetch
-                const batches = calculatePageBatches(offset, limit)
+                const batches = calculatePageBatches(
+                    config.offset,
+                    config?.limit ?? MAX_PAGE_SIZE
+                )
 
                 // Fetch all batches in parallel
                 const results = await Promise.all(
@@ -142,9 +150,15 @@ export function sync(
                     })
                 )
 
+                // Collect all batch data for fullRemoteData
+                fullRemoteData = []
+                for (const result of results) {
+                    fullRemoteData.push(...result.data)
+                }
+
                 // Return only the actual query result
-                const actualResult = results.find((r) => r.isActual)
-                transformedData = (actualResult?.data || []) as unknown[]
+                const actualResult = results.find((result) => result.isActual)
+                transformedData = actualResult?.data || []
             }
 
             return transformedData
@@ -156,6 +170,7 @@ export function sync(
             queryStore.setState((prev) => ({
                 ...prev,
                 remoteData: result.data,
+                fullRemoteData: config?.offset ? fullRemoteData : result.data,
                 isPending: prev.isPending && result.isPending,
                 error: result.error
             }))

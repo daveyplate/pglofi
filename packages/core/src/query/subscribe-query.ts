@@ -1,16 +1,18 @@
-import { createCollection, liveQueryCollectionOptions } from "@tanstack/db"
+import {
+    type Collection,
+    createCollection,
+    liveQueryCollectionOptions
+} from "@tanstack/db"
 import { getTableName } from "drizzle-orm"
 import type { AnyPgTable } from "drizzle-orm/pg-core"
+import { isEqual } from "lodash-es"
+
 import type { LofiPlugin } from "../plugin/lofi-plugin"
 import { dbStore } from "../stores"
 import { createQuery } from "./create-query"
 import { pushToPullStreams } from "./pullstream-helpers"
 import { buildQuery, flatToHierarchical } from "./query-builder"
-import type {
-    InferQueryResult,
-    QueryConfig,
-    StrictQueryConfig
-} from "./query-types"
+import type { QueryConfig, StrictQueryConfig } from "./query-types"
 
 export function subscribeQuery<
     TSchema extends Record<string, AnyPgTable>,
@@ -44,6 +46,53 @@ export function subscribeQuery<
             })
         )
 
+        // Create a separate collection for fullData if pagination is used
+        let fullDataCollection: Collection
+        let fullDataSubscription: { unsubscribe: () => void } | undefined
+
+        if (config?.offset) {
+            // Build query for all pages up to current page (offset + limit)
+            const fullDataConfig = {
+                ...config,
+                offset: 0,
+                limit: config.offset + (config.limit ?? 0)
+            }
+
+            const fullDataQuery = buildQuery(schema, tableKey, fullDataConfig)
+            fullDataCollection = createCollection(
+                liveQueryCollectionOptions({
+                    query: fullDataQuery,
+                    startSync: true
+                })
+            )
+
+            // Helper to update fullData
+            const updateFullData = () => {
+                const fullDataRaw = fullDataCollection.toArray
+
+                const fullDataHierarchical = flatToHierarchical(
+                    schema,
+                    fullDataRaw,
+                    tableKey,
+                    tableName!,
+                    fullDataConfig
+                )
+
+                queryStore.setState(
+                    (prev) =>
+                        ({
+                            ...prev,
+                            fullData: fullDataHierarchical
+                        }) as typeof prev
+                )
+            }
+
+            fullDataCollection.onFirstReady(updateFullData)
+            fullDataSubscription =
+                fullDataCollection.subscribeChanges(updateFullData)
+            fullDataCollection.startSyncImmediate()
+        }
+
         // Helper function to update the store with collection data
         const updateStore = () => {
             // Get the raw data from the collection
@@ -59,15 +108,17 @@ export function subscribeQuery<
             )
 
             // Update the store with the new data
-            queryStore.setState((prev) => ({
-                ...prev,
-                isPending: prev.isPending && !hierarchicalData.length,
-                data: hierarchicalData as InferQueryResult<
-                    TSchema,
-                    TTableKey,
-                    TQueryConfig
-                >[]
-            }))
+            queryStore.setState(
+                (prev) =>
+                    ({
+                        ...prev,
+                        isPending: prev.isPending && !hierarchicalData.length,
+                        data: hierarchicalData,
+                        fullData: config?.offset
+                            ? prev.fullData
+                            : hierarchicalData
+                    }) as typeof prev
+            )
         }
 
         queryCollection.onFirstReady(updateStore)
@@ -75,14 +126,14 @@ export function subscribeQuery<
 
         queryCollection.startSyncImmediate()
 
-        // Watch for changes to remoteData and push to pullStreams
+        // Watch for changes to fullRemoteData and push to pullStreams
         const remoteDataUnsubscribe = queryStore.subscribe(
-            ({ prevVal, currentVal: { remoteData } }) => {
-                if (prevVal.remoteData === remoteData) return
-                if (!remoteData?.length) return
+            ({ prevVal, currentVal: { fullRemoteData } }) => {
+                if (isEqual(prevVal.fullRemoteData, fullRemoteData)) return
+                if (!fullRemoteData?.length) return
 
                 // Push to pullStreams with includes handling
-                pushToPullStreams(schema, tableKey, remoteData, config)
+                pushToPullStreams(schema, tableKey, fullRemoteData, config)
             }
         )
 
@@ -102,6 +153,9 @@ export function subscribeQuery<
             subscription.unsubscribe()
             remoteDataUnsubscribe()
             queryCollection.cleanup()
+
+            fullDataSubscription?.unsubscribe()
+            fullDataCollection?.cleanup()
 
             for (const cleanup of pluginCleanups) {
                 cleanup()
