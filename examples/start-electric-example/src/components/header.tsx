@@ -1,82 +1,55 @@
 import { GitHubIcon, UserButton } from "@daveyplate/better-auth-ui"
-import { Shape, ShapeStream } from "@electric-sql/client"
 import { Link } from "@tanstack/react-router"
-import { useEffect } from "react"
 import { ModeToggle } from "./mode-toggle"
 import { Button } from "./ui/button"
 import { Separator } from "./ui/separator"
 
 export function Header() {
-    useEffect(() => {
-        const stream = new ShapeStream({
-            url: "http://localhost:3000/api/shape",
-            params: {
-                table: "todos"
-            }
-        })
+  return (
+    <header className="sticky top-0 z-50 flex h-12 justify-between border-b bg-background/60 px-safe-or-4 backdrop-blur md:h-14 md:px-safe-or-6">
+      <div className="flex items-center gap-4">
+        <Link to="/" className="flex items-center gap-2">
+          <svg
+            className="size-5"
+            fill="none"
+            height="45"
+            viewBox="0 0 60 45"
+            width="60"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <title>pgLofi</title>
 
-        const shape = new Shape(stream)
-        const unsubscribe = shape.subscribe((data) => {
-            console.log(data)
-        })
+            <path
+              className="fill-black dark:fill-white"
+              clipRule="evenodd"
+              d="M0 0H15V45H0V0ZM45 0H60V45H45V0ZM20 0H40V15H20V0ZM20 30H40V45H20V30Z"
+              fillRule="evenodd"
+            />
+          </svg>
+          pgLofi
+        </Link>
 
-        return () => {
-            unsubscribe()
-        }
-    })
+        <Separator orientation="vertical" />
 
-    return (
-        <header className="sticky top-0 z-50 flex h-12 justify-between border-b bg-background/60 px-safe-or-4 backdrop-blur md:h-14 md:px-safe-or-6">
-            <div className="flex items-center gap-4">
-                <Link to="/" className="flex items-center gap-2">
-                    <svg
-                        className="size-5"
-                        fill="none"
-                        height="45"
-                        viewBox="0 0 60 45"
-                        width="60"
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <title>pgLofi</title>
+        <Link to="/todos" className="font-medium text-sm hover:underline">
+          Todos
+        </Link>
+      </div>
 
-                        <path
-                            className="fill-black dark:fill-white"
-                            clipRule="evenodd"
-                            d="M0 0H15V45H0V0ZM45 0H60V45H45V0ZM20 0H40V15H20V0ZM20 30H40V45H20V30Z"
-                            fillRule="evenodd"
-                        />
-                    </svg>
-                    pgLofi
-                </Link>
+      <div className="flex items-center gap-2">
+        <a
+          href="https://github.com/daveyplate/better-auth-nextjs-neon-starter"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Button variant="outline" size="icon" className="size-8 rounded-full">
+            <GitHubIcon />
+          </Button>
+        </a>
 
-                <Separator orientation="vertical" />
-
-                <Link
-                    to="/todos"
-                    className="font-medium text-sm hover:underline"
-                >
-                    Todos
-                </Link>
-            </div>
-
-            <div className="flex items-center gap-2">
-                <a
-                    href="https://github.com/daveyplate/better-auth-nextjs-neon-starter"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="size-8 rounded-full"
-                    >
-                        <GitHubIcon />
-                    </Button>
-                </a>
-
-                <ModeToggle />
-                <UserButton size="icon" />
-            </div>
-        </header>
-    )
+        <ModeToggle />
+        <UserButton size="icon" />
+      </div>
+    </header>
+  )
 }

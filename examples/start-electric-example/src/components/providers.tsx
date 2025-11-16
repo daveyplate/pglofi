@@ -8,30 +8,30 @@ import { lofi } from "@/lib/lofi"
 import { MetaTheme } from "./meta-theme"
 
 export function Providers({ children }: { children: React.ReactNode }) {
-    const { navigate } = useRouter()
-    const { data: sessionData } = authClient.useSession()
+  const { navigate } = useRouter()
+  const { data: sessionData } = authClient.useSession()
 
-    useEffect(() => {
-        lofi.setToken(sessionData?.session.token)
-    }, [sessionData])
+  useEffect(() => {
+    lofi.setToken(sessionData?.session.token)
+  }, [sessionData])
 
-    return (
-        <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-        >
-            <AuthUIProvider
-                authClient={authClient}
-                navigate={(href) => navigate({ href })}
-                replace={(href) => navigate({ href, replace: true })}
-                Link={({ href, ...props }) => <Link to={href} {...props} />}
-            >
-                {children}
+  return (
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <AuthUIProvider
+        authClient={authClient}
+        navigate={(href) => navigate({ href })}
+        replace={(href) => navigate({ href, replace: true })}
+        Link={({ href, ...props }) => <Link to={href} {...props} />}
+      >
+        {children}
 
-                <MetaTheme />
-            </AuthUIProvider>
-        </ThemeProvider>
-    )
+        <MetaTheme />
+      </AuthUIProvider>
+    </ThemeProvider>
+  )
 }

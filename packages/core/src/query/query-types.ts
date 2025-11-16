@@ -165,14 +165,25 @@ export type StrictQueryConfig<
     TTableKey extends keyof TSchema,
     T
 > = T & // Start with T to preserve all properties for InferQueryResult
-    NoExcessProperties<OmitWhere<T>, OmitWhere<QueryConfig<TSchema, TTableKey>>> &
+    NoExcessProperties<
+        OmitWhere<T>,
+        OmitWhere<QueryConfig<TSchema, TTableKey>>
+    > &
     (T extends { include: infer I }
         ? I extends object
             ? { include: StrictIncludeConfig<TSchema, I> }
             : {}
         : {}) &
-    (T extends { limit: infer L } ? (L extends number ? { limit: L } : {}) : {}) &
-    (T extends { offset: infer O } ? (O extends number ? { offset: O } : {}) : {}) &
+    (T extends { limit: infer L }
+        ? L extends number
+            ? { limit: L }
+            : {}
+        : {}) &
+    (T extends { offset: infer O }
+        ? O extends number
+            ? { offset: O }
+            : {}
+        : {}) &
     (T extends { orderBy: infer OB }
         ? OB extends OrderByConfig<TSchema[TTableKey]>
             ? { orderBy: OB }

@@ -6,18 +6,18 @@ import devtoolsJson from "vite-plugin-devtools-json"
 import viteTsConfigPaths from "vite-tsconfig-paths"
 
 const config = defineConfig({
-    server: {
-        port: 3000
-    },
-    plugins: [
-        viteTsConfigPaths({
-            projects: ["./tsconfig.json"]
-        }),
-        tailwindcss(),
-        tanstackStart(),
-        viteReact(),
-        devtoolsJson()
-    ]
+  server: {
+    port: 3000
+  },
+  plugins: [
+    viteTsConfigPaths({
+      projects: ["./tsconfig.json"]
+    }),
+    tailwindcss(),
+    tanstackStart(),
+    viteReact(),
+    devtoolsJson()
+  ]
 })
 
 export default config
