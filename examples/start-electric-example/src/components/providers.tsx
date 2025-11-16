@@ -2,9 +2,8 @@ import { AuthUIProvider } from "@daveyplate/better-auth-ui"
 import { Link, useRouter } from "@tanstack/react-router"
 import { ThemeProvider } from "next-themes"
 import { useEffect } from "react"
-
+import { tokenStore } from "@/database/collections"
 import { authClient } from "@/lib/auth-client"
-import { lofi } from "@/lib/lofi"
 import { MetaTheme } from "./meta-theme"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -12,7 +11,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const { data: sessionData } = authClient.useSession()
 
   useEffect(() => {
-    lofi.setToken(sessionData?.session.token)
+    // lofi.setToken(sessionData?.session.token)
+    tokenStore.setState(sessionData?.session.token)
   }, [sessionData])
 
   return (

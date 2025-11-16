@@ -1,5 +1,6 @@
-import { useAuthenticate } from "@daveyplate/better-auth-ui"
+import { ilike, useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute } from "@tanstack/react-router"
+import { useStore } from "@tanstack/react-store"
 import { useThrottle } from "@uidotdev/usehooks"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
@@ -8,27 +9,34 @@ import { TodoItem } from "@/components/todos/todo-item"
 import { TodoSkeleton } from "@/components/todos/todo-skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { collections, tokenStore } from "@/database/collections"
 import type { Todo } from "@/database/schema"
+import { authClient } from "@/lib/auth-client"
 import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
 
 export const Route = createFileRoute("/todos")({
-  component: TodosPage
+  component: TodosPage,
+  ssr: false
 })
 
 function TodosPage() {
-  const { user } = useAuthenticate()
+  // const { user } = useAuthenticate()
+  const { data: sessionData } = authClient.useSession()
+  const user = sessionData?.user
+
   const [q, setQ] = useState("")
   const throttledQ = useThrottle(q, 300)
 
-  const { data: todos, isPending } = lofi.useQuery("todos", {
-    include: { user: "profiles" },
-    where: {
-      userId: user?.id,
-      ...(throttledQ && { task: { ilike: `%${throttledQ}%` } })
-    },
-    orderBy: { createdAt: "desc" }
-  })
+  const token = useStore(tokenStore)
+  const { data: todos, isLoading } = useLiveQuery(
+    (q) =>
+      q
+        .from({ todos: collections.todos })
+        // .where(({ todos }) => eq(todos.userId, user?.id))
+        .where(({ todos }) => ilike(todos.task, `%${throttledQ}%`)),
+    [throttledQ, token]
+  )
 
   const insertTodo = (todo: Todo) => {
     lofi.insert("todos", todo)
@@ -65,7 +73,7 @@ function TodosPage() {
       />
 
       <div className="flex flex-col gap-4">
-        {isPending ? (
+        {isLoading ? (
           [...Array(3)].map((_, index) => (
             <TodoSkeleton key={index.toString()} />
           ))

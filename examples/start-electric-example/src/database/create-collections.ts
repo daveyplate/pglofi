@@ -19,6 +19,13 @@ type ValidKeys<TSchema extends Record<string, unknown>> = {
   [K in keyof TSchema]: TSchema[K] extends ValidCollectionValue ? K : never
 }[keyof TSchema]
 
+type SchemaForKey<
+  TSchema extends Record<string, unknown>,
+  K extends ValidKeys<TSchema>
+> = Extract<TSchema[K], AnyPgTable> extends never
+  ? Extract<TSchema[K], z.ZodObject<z.ZodRawShape>>
+  : Extract<TSchema[K], AnyPgTable>
+
 type CreateCollectionsOptions<TSchema extends Record<string, unknown>> = {
   schema: TSchema
   config: <K extends ValidKeys<TSchema>>({
@@ -26,7 +33,7 @@ type CreateCollectionsOptions<TSchema extends Record<string, unknown>> = {
     schema
   }: {
     key: K
-    schema: TSchema[K]
+    schema: SchemaForKey<TSchema, K>
     // biome-ignore lint/suspicious/noExplicitAny: CollectionConfig accepts any for flexibility
   }) => CollectionConfig<any, any, never, any>
 }
@@ -52,7 +59,10 @@ export function createCollections<TSchema extends Record<string, unknown>>({
 
     const validKey = key as unknown as ValidKeys<TSchema>
     const collection = createCollection(
-      config({ key: validKey, schema: schema[validKey] })
+      config({
+        key: validKey,
+        schema: schema[validKey] as SchemaForKey<TSchema, ValidKeys<TSchema>>
+      })
     )
 
     collections[key] = collection
