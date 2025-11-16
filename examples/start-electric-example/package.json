@@ -41,6 +41,8 @@
     "@tanstack/rxdb-db-collection": "^0.1.32",
     "@tanstack/store": "^0.8.0",
     "@uidotdev/usehooks": "^2.4.1",
+    "@upstash/realtime": "^0.3.0",
+    "@upstash/redis": "^1.35.6",
     "better-auth": "^1.3.34",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

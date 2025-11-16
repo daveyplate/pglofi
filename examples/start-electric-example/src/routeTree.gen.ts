@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TodosRouteImport } from './routes/todos'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthPathRouteImport } from './routes/auth/$path'
+import { Route as ApiStreamRouteImport } from './routes/api/stream'
 import { Route as ApiShapeRouteImport } from './routes/api/shape'
+import { Route as ApiRealtimeRouteImport } from './routes/api/realtime'
 import { Route as AccountPathRouteImport } from './routes/account/$path'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -31,9 +33,19 @@ const AuthPathRoute = AuthPathRouteImport.update({
   path: '/auth/$path',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiStreamRoute = ApiStreamRouteImport.update({
+  id: '/api/stream',
+  path: '/api/stream',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiShapeRoute = ApiShapeRouteImport.update({
   id: '/api/shape',
   path: '/api/shape',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRealtimeRoute = ApiRealtimeRouteImport.update({
+  id: '/api/realtime',
+  path: '/api/realtime',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountPathRoute = AccountPathRouteImport.update({
@@ -51,7 +63,9 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/todos': typeof TodosRoute
   '/account/$path': typeof AccountPathRoute
+  '/api/realtime': typeof ApiRealtimeRoute
   '/api/shape': typeof ApiShapeRoute
+  '/api/stream': typeof ApiStreamRoute
   '/auth/$path': typeof AuthPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -59,7 +73,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/todos': typeof TodosRoute
   '/account/$path': typeof AccountPathRoute
+  '/api/realtime': typeof ApiRealtimeRoute
   '/api/shape': typeof ApiShapeRoute
+  '/api/stream': typeof ApiStreamRoute
   '/auth/$path': typeof AuthPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -68,7 +84,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/todos': typeof TodosRoute
   '/account/$path': typeof AccountPathRoute
+  '/api/realtime': typeof ApiRealtimeRoute
   '/api/shape': typeof ApiShapeRoute
+  '/api/stream': typeof ApiStreamRoute
   '/auth/$path': typeof AuthPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -78,7 +96,9 @@ export interface FileRouteTypes {
     | '/'
     | '/todos'
     | '/account/$path'
+    | '/api/realtime'
     | '/api/shape'
+    | '/api/stream'
     | '/auth/$path'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -86,7 +106,9 @@ export interface FileRouteTypes {
     | '/'
     | '/todos'
     | '/account/$path'
+    | '/api/realtime'
     | '/api/shape'
+    | '/api/stream'
     | '/auth/$path'
     | '/api/auth/$'
   id:
@@ -94,7 +116,9 @@ export interface FileRouteTypes {
     | '/'
     | '/todos'
     | '/account/$path'
+    | '/api/realtime'
     | '/api/shape'
+    | '/api/stream'
     | '/auth/$path'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -103,7 +127,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   TodosRoute: typeof TodosRoute
   AccountPathRoute: typeof AccountPathRoute
+  ApiRealtimeRoute: typeof ApiRealtimeRoute
   ApiShapeRoute: typeof ApiShapeRoute
+  ApiStreamRoute: typeof ApiStreamRoute
   AuthPathRoute: typeof AuthPathRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -131,11 +157,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthPathRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/stream': {
+      id: '/api/stream'
+      path: '/api/stream'
+      fullPath: '/api/stream'
+      preLoaderRoute: typeof ApiStreamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/shape': {
       id: '/api/shape'
       path: '/api/shape'
       fullPath: '/api/shape'
       preLoaderRoute: typeof ApiShapeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/realtime': {
+      id: '/api/realtime'
+      path: '/api/realtime'
+      fullPath: '/api/realtime'
+      preLoaderRoute: typeof ApiRealtimeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account/$path': {
@@ -159,7 +199,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   TodosRoute: TodosRoute,
   AccountPathRoute: AccountPathRoute,
+  ApiRealtimeRoute: ApiRealtimeRoute,
   ApiShapeRoute: ApiShapeRoute,
+  ApiStreamRoute: ApiStreamRoute,
   AuthPathRoute: AuthPathRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

@@ -2,8 +2,9 @@ import { eq, ilike, useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute } from "@tanstack/react-router"
 import { useStore } from "@tanstack/react-store"
 import { useThrottle } from "@uidotdev/usehooks"
+import { useRealtime } from "@upstash/realtime/client"
 import { PlusIcon } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { v7 } from "uuid"
 import { TodoItem } from "@/components/todos/todo-item"
 import { TodoSkeleton } from "@/components/todos/todo-skeleton"
@@ -14,6 +15,7 @@ import { tokenStore } from "@/database/postgrest"
 import type { Profile, Todo } from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
 import { handleAction } from "@/lib/form-helpers"
+import type { RealtimeEvents } from "@/lib/realtime"
 
 export const Route = createFileRoute("/todos")({
   component: TodosPage,
@@ -21,6 +23,31 @@ export const Route = createFileRoute("/todos")({
 })
 
 function TodosPage() {
+  const [key, setKey] = useState("")
+  useRealtime<RealtimeEvents>({
+    channels: ["sequin.public.todos"],
+    event: "db.change",
+    history: false,
+    api: {
+      url: "/api/stream"
+    },
+    onData(data, channel) {
+      if (data.operation === "delete") {
+        collections.todos._state.syncedData.delete(data.record.id)
+      } else {
+        collections.todos._state.syncedData.set(data.record.id, data.record)
+      }
+
+      console.log(`STREAM: Message from ${channel}:`, data)
+    }
+  })
+
+  useEffect(() => {
+    // clientRealtime
+    //   .channel("sequin.public.todos")
+    //   .emit("db.change", { message: "Hello, world!" })
+  }, [])
+
   // const { user } = useAuthenticate()
   const { data: sessionData } = authClient.useSession()
   const user = sessionData?.user
@@ -38,7 +65,7 @@ function TodosPage() {
         .join({ profiles: collections.profiles }, ({ todos, profiles }) =>
           eq(todos.userId, profiles.id)
         ),
-    [throttledQ]
+    [throttledQ, key]
   )
 
   const todos: (Todo & { user: Profile })[] = queryData
