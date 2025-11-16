@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/tooltip"
 import { collections } from "@/database/collections"
 import type { Profile, Todo } from "@/database/schema"
-import { lofi } from "@/lib/lofi"
 
 export function TodoItem({ todo }: { todo: Todo & { user: Profile | null } }) {
   return (
@@ -39,7 +38,7 @@ export function TodoItem({ todo }: { todo: Todo & { user: Profile | null } }) {
         size="icon"
         variant="ghost"
         className="size-4 bg-transparent!"
-        onClick={() => lofi.delete("todos", todo.id)}
+        onClick={() => collections.todos.delete(todo.id)}
       >
         <XIcon />
       </Button>

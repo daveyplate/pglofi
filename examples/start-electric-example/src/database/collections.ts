@@ -37,7 +37,6 @@ export const collections = createCollections({
             })
 
             if (localState?.length) {
-              console.log(key, "localState", "markReady")
               markReady()
             }
 
@@ -155,7 +154,6 @@ export const collections = createCollections({
 
             const unsubscribe = observer.subscribe(({ isPending }) => {
               if (!isPending) {
-                console.log(key, "observer", "markReady")
                 markReady()
               }
             })
@@ -165,9 +163,8 @@ export const collections = createCollections({
               unsubscribe()
             })
           },
-          onDeduplicate: (opts) => {
-            console.log("deduplicate", opts)
-            return true
+          onDeduplicate: () => {
+            // console.log("deduplicate", opts)
           }
         })
 
@@ -192,9 +189,48 @@ export const collections = createCollections({
 
           if (error) throw error
 
-          console.log({ data })
-          if (data) {
+          if (data?.length) {
             collection._state.syncedData.set(original.id, data[0])
+          }
+        })
+      )
+    },
+    onDelete: async ({ collection, transaction }) => {
+      await Promise.all(
+        transaction.mutations.map(async ({ original }) => {
+          const postgrest = getPostgrest(
+            import.meta.env.VITE_NEON_DATA_API_URL,
+            tokenStore.state
+          )
+
+          const { error } = await postgrest
+            .from(getTableName(schema))
+            .delete()
+            .eq("id", original.id)
+
+          if (error) throw error
+
+          collection._state.syncedData.delete(original.id)
+        })
+      )
+    },
+    onInsert: async ({ collection, transaction }) => {
+      await Promise.all(
+        transaction.mutations.map(async ({ modified }) => {
+          const postgrest = getPostgrest(
+            import.meta.env.VITE_NEON_DATA_API_URL,
+            tokenStore.state
+          )
+
+          const { data, error } = await postgrest
+            .from(getTableName(schema))
+            .insert(modified)
+            .select()
+
+          if (error) throw error
+
+          if (data?.length) {
+            collection._state.syncedData.set(modified.id, data[0])
           }
         })
       )
@@ -215,7 +251,6 @@ if (typeof window !== "undefined") {
     }
 
     collection.subscribeChanges(() => {
-      console.log("persist collection", collectionKey)
       const persistCollection = JSON.stringify(collection.toArray)
       localStorage.setItem(persistKey, persistCollection)
     })

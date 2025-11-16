@@ -4,7 +4,7 @@ import { useStore } from "@tanstack/react-store"
 import { useThrottle } from "@uidotdev/usehooks"
 import { PlusIcon } from "lucide-react"
 import { useState } from "react"
-
+import { v7 } from "uuid"
 import { TodoItem } from "@/components/todos/todo-item"
 import { TodoSkeleton } from "@/components/todos/todo-skeleton"
 import { Button } from "@/components/ui/button"
@@ -14,7 +14,6 @@ import { tokenStore } from "@/database/postgrest"
 import type { Profile, Todo } from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
 import { handleAction } from "@/lib/form-helpers"
-import { lofi } from "@/lib/lofi"
 
 export const Route = createFileRoute("/todos")({
   component: TodosPage,
@@ -51,8 +50,18 @@ function TodosPage() {
         }))
     : []
 
-  const insertTodo = (todo: Todo) => {
-    lofi.insert("todos", todo)
+  const insertTodo = ({ task }: { task: string }) => {
+    if (!user) return
+
+    collections.todos.insert({
+      id: v7(),
+      task,
+      userId: user?.id,
+      projectId: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isComplete: false
+    })
   }
 
   return (
