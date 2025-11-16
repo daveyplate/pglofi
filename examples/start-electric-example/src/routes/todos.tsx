@@ -1,4 +1,4 @@
-import { ilike, useLiveQuery } from "@tanstack/react-db"
+import { eq, ilike, useLiveQuery } from "@tanstack/react-db"
 import { createFileRoute } from "@tanstack/react-router"
 import { useStore } from "@tanstack/react-store"
 import { useThrottle } from "@uidotdev/usehooks"
@@ -9,8 +9,9 @@ import { TodoItem } from "@/components/todos/todo-item"
 import { TodoSkeleton } from "@/components/todos/todo-skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { collections, tokenStore } from "@/database/collections"
-import type { Todo } from "@/database/schema"
+import { collections } from "@/database/collections"
+import { tokenStore } from "@/database/postgrest"
+import type { Profile, Todo } from "@/database/schema"
 import { authClient } from "@/lib/auth-client"
 import { handleAction } from "@/lib/form-helpers"
 import { lofi } from "@/lib/lofi"
@@ -29,14 +30,26 @@ function TodosPage() {
   const throttledQ = useThrottle(q, 300)
 
   const token = useStore(tokenStore)
-  const { data: todos, isLoading } = useLiveQuery(
+  const { data: queryData, isLoading } = useLiveQuery(
     (q) =>
       q
         .from({ todos: collections.todos })
         // .where(({ todos }) => eq(todos.userId, user?.id))
-        .where(({ todos }) => ilike(todos.task, `%${throttledQ}%`)),
-    [throttledQ, token]
+        .where(({ todos }) => ilike(todos.task, `%${throttledQ}%`))
+        .join({ profiles: collections.profiles }, ({ todos, profiles }) =>
+          eq(todos.userId, profiles.id)
+        ),
+    [throttledQ]
   )
+
+  const todos: (Todo & { user: Profile })[] = queryData
+    ? queryData
+        .filter((row) => row.profiles)
+        .map((row) => ({
+          ...row.todos,
+          user: row.profiles!
+        }))
+    : []
 
   const insertTodo = (todo: Todo) => {
     lofi.insert("todos", todo)

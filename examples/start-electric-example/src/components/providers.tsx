@@ -2,7 +2,7 @@ import { AuthUIProvider } from "@daveyplate/better-auth-ui"
 import { Link, useRouter } from "@tanstack/react-router"
 import { ThemeProvider } from "next-themes"
 import { useEffect } from "react"
-import { tokenStore } from "@/database/collections"
+import { tokenStore } from "@/database/postgrest"
 import { authClient } from "@/lib/auth-client"
 import { MetaTheme } from "./meta-theme"
 

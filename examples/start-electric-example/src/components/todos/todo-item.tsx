@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger
 } from "@/components/ui/tooltip"
+import { collections } from "@/database/collections"
 import type { Profile, Todo } from "@/database/schema"
 import { lofi } from "@/lib/lofi"
 
@@ -16,8 +17,8 @@ export function TodoItem({ todo }: { todo: Todo & { user: Profile | null } }) {
       <Checkbox
         checked={todo.isComplete}
         onCheckedChange={() =>
-          lofi.update("todos", todo.id, {
-            isComplete: !todo.isComplete
+          collections.todos.update(todo.id, (draft) => {
+            draft.isComplete = !draft.isComplete
           })
         }
       />

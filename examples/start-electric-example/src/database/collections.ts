@@ -4,19 +4,25 @@ import {
   parseWhereExpression
 } from "@tanstack/db"
 import { QueryClient, QueryObserver } from "@tanstack/query-core"
-import { Store } from "@tanstack/store"
 import { getTableName } from "drizzle-orm"
 import * as schema from "@/database/schema"
 import { createCollections } from "./create-collections"
-import { getPostgrest } from "./postgrest"
+import { getPostgrest, tokenStore } from "./postgrest"
 
-const queryClient = new QueryClient()
-export const tokenStore = new Store<string | undefined | null>(undefined)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 3,
+      refetchOnReconnect: true
+    }
+  }
+})
 
 export const collections = createCollections({
   schema,
   config: ({ key, schema }) => ({
     id: key,
+    syncMode: "on-demand",
     getKey: (todo: { id: string }) => todo.id,
     sync: {
       sync: ({ begin, commit, write, collection, markReady }) => {
@@ -31,6 +37,7 @@ export const collections = createCollections({
             })
 
             if (localState?.length) {
+              console.log(key, "localState", "markReady")
               markReady()
             }
 
@@ -99,16 +106,9 @@ export const collections = createCollections({
 
                 const { data, error } = await builder
 
-                if (error) throw error
-
-                return data
-              }
-            })
-
-            const unsubscribe = observer.subscribe(
-              ({ data, isPending, error }) => {
-                if (!isPending) markReady()
-                if (isPending || error || !data) return
+                if (error) {
+                  throw error
+                }
 
                 begin()
                 data.forEach((item) => {
@@ -149,37 +149,75 @@ export const collections = createCollections({
                   }
                 }
 
+                return data
+              }
+            })
+
+            const unsubscribe = observer.subscribe(({ isPending }) => {
+              if (!isPending) {
+                console.log(key, "observer", "markReady")
                 markReady()
               }
-            )
+            })
 
             subscription?.once("unsubscribed", () => {
               dedupe.reset()
               unsubscribe()
             })
           },
-          onDeduplicate: (opts) => console.log(`Call was deduplicated:`, opts)
+          onDeduplicate: (opts) => {
+            console.log("deduplicate", opts)
+            return true
+          }
         })
+
+        dedupe.reset()
 
         return { loadSubset: dedupe.loadSubset }
       }
     },
-    syncMode: "on-demand"
+    onUpdate: async ({ collection, transaction }) => {
+      await Promise.all(
+        transaction.mutations.map(async ({ changes, original }) => {
+          const postgrest = getPostgrest(
+            import.meta.env.VITE_NEON_DATA_API_URL,
+            tokenStore.state
+          )
+
+          const { data, error } = await postgrest
+            .from(getTableName(schema))
+            .update(changes)
+            .eq("id", original.id)
+            .select()
+
+          if (error) throw error
+
+          console.log({ data })
+          if (data) {
+            collection._state.syncedData.set(original.id, data[0])
+          }
+        })
+      )
+    }
   })
 })
 
 if (typeof window !== "undefined") {
-  const persistCollection = localStorage.getItem("todos-persist-collection")
-  if (persistCollection) {
-    JSON.parse(persistCollection).forEach((document: schema.Todo) => {
-      collections.todos._state.syncedData.set(document.id, document)
+  for (const collectionKey in collections) {
+    const collection = collections[collectionKey as keyof typeof collections]
+    const persistKey = `${collectionKey}-persist-collection`
+    const persistCollection = localStorage.getItem(persistKey)
+    if (persistCollection) {
+      JSON.parse(persistCollection).forEach((document: { id: string }) => {
+        // @ts-expect-error - Collections have different types
+        collection._state.syncedData.set(document.id, document)
+      })
+    }
+
+    collection.subscribeChanges(() => {
+      console.log("persist collection", collectionKey)
+      const persistCollection = JSON.stringify(collection.toArray)
+      localStorage.setItem(persistKey, persistCollection)
     })
   }
-
-  collections.todos.subscribeChanges((changes) => {
-    console.log({ changes })
-
-    const persistCollection = JSON.stringify(collections.todos.toArray)
-    localStorage.setItem("todos-persist-collection", persistCollection)
-  })
 }
